@@ -15,6 +15,6 @@ WORKDIR /app
 COPY --from=builder /out/mams-server /app/mams-server
 COPY --from=builder /app/migrations /app/migrations
 
-EXPOSE 8080
+EXPOSE 8081
 
 ENTRYPOINT ["/app/mams-server"]

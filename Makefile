@@ -15,5 +15,5 @@ logs:
 	$(COMPOSE) logs -f --tail=100
 
 smoke:
-	curl -fsS http://localhost:8080/healthz
-	curl -sS -i -X POST http://localhost:8080/api/auth/login -H "Content-Type: application/json" --data '{"login":"admin","password":"admin"}'
+	curl -fsS http://localhost:8081/healthz
+	curl -sS -i -X POST http://localhost:8081/api/auth/login -H "Content-Type: application/json" --data '{"login":"admin","password":"admin"}'
