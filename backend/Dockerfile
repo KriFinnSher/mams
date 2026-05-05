@@ -13,6 +13,7 @@ FROM alpine:3.20
 WORKDIR /app
 
 COPY --from=builder /out/mams-server /app/mams-server
+COPY --from=builder /app/migrations /app/migrations
 
 EXPOSE 8080
 

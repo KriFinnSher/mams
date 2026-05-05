@@ -27,3 +27,4 @@
 - Interfaces used by handlers/services should be placed in `contract.go` in the same package.
 - `contract.go` must include: `//go:generate mockgen -source=contract.go -destination=mocks/contract.go -package=mocks`
 - Tests must use generated mocks from `mockgen`, not handwritten stubs.
+- For local bootstrap, backend startup may run idempotent DB migrations and minimal technical seed data required for smoke/login checks.
