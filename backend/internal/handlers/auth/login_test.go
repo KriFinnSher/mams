@@ -2,42 +2,19 @@ package auth
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"go.uber.org/mock/gomock"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/mams/backend/internal/handlers/auth/mocks"
 	"github.com/mams/backend/internal/models"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
 )
-
-type testUserReader struct {
-	user models.User
-	err  error
-}
-
-func (r testUserReader) GetByLogin(_ context.Context, _ string) (models.User, error) {
-	if r.err != nil {
-		return models.User{}, r.err
-	}
-	return r.user, nil
-}
-
-type testTokenIssuer struct {
-	token string
-	err   error
-}
-
-func (i testTokenIssuer) IssueToken(_ models.User) (string, error) {
-	if i.err != nil {
-		return "", i.err
-	}
-	return i.token, nil
-}
 
 func TestLoginHandlerPost(t *testing.T) {
 	hash, err := bcrypt.GenerateFromPassword([]byte("secret"), bcrypt.DefaultCost)
@@ -53,8 +30,7 @@ func TestLoginHandlerPost(t *testing.T) {
 	tests := []struct {
 		name       string
 		body       any
-		users      UserReader
-		issuer     TokenIssuer
+		prepare    func(users *mocks.MockUserReader, issuer *mocks.MockTokenIssuer)
 		wantStatus int
 		wantToken  string
 		wantErr    string
@@ -62,48 +38,52 @@ func TestLoginHandlerPost(t *testing.T) {
 		{
 			name:       "success",
 			body:       map[string]string{"login": "vadim", "password": "secret"},
-			users:      testUserReader{user: validUser},
-			issuer:     testTokenIssuer{token: "jwt-token"},
+			prepare: func(users *mocks.MockUserReader, issuer *mocks.MockTokenIssuer) {
+				users.EXPECT().GetByLogin(gomock.Any(), "vadim").Return(validUser, nil)
+				issuer.EXPECT().IssueToken(validUser).Return("jwt-token", nil)
+			},
 			wantStatus: http.StatusOK,
 			wantToken:  "jwt-token",
 		},
 		{
 			name:       "invalid json",
 			body:       "{bad-json",
-			users:      testUserReader{user: validUser},
-			issuer:     testTokenIssuer{token: "jwt-token"},
+			prepare:    func(_ *mocks.MockUserReader, _ *mocks.MockTokenIssuer) {},
 			wantStatus: http.StatusBadRequest,
 			wantErr:    "invalid request body",
 		},
 		{
 			name:       "missing login",
 			body:       map[string]string{"password": "secret"},
-			users:      testUserReader{user: validUser},
-			issuer:     testTokenIssuer{token: "jwt-token"},
+			prepare:    func(_ *mocks.MockUserReader, _ *mocks.MockTokenIssuer) {},
 			wantStatus: http.StatusBadRequest,
 			wantErr:    "login and password are required",
 		},
 		{
 			name:       "user not found",
 			body:       map[string]string{"login": "vadim", "password": "secret"},
-			users:      testUserReader{err: postgresrepo.ErrUserNotFound},
-			issuer:     testTokenIssuer{token: "jwt-token"},
+			prepare: func(users *mocks.MockUserReader, _ *mocks.MockTokenIssuer) {
+				users.EXPECT().GetByLogin(gomock.Any(), "vadim").Return(models.User{}, postgresrepo.ErrUserNotFound)
+			},
 			wantStatus: http.StatusUnauthorized,
 			wantErr:    "invalid credentials",
 		},
 		{
 			name:       "wrong password",
 			body:       map[string]string{"login": "vadim", "password": "wrong"},
-			users:      testUserReader{user: validUser},
-			issuer:     testTokenIssuer{token: "jwt-token"},
+			prepare: func(users *mocks.MockUserReader, _ *mocks.MockTokenIssuer) {
+				users.EXPECT().GetByLogin(gomock.Any(), "vadim").Return(validUser, nil)
+			},
 			wantStatus: http.StatusUnauthorized,
 			wantErr:    "invalid credentials",
 		},
 		{
 			name:       "token issue failure",
 			body:       map[string]string{"login": "vadim", "password": "secret"},
-			users:      testUserReader{user: validUser},
-			issuer:     testTokenIssuer{err: errors.New("issue error")},
+			prepare: func(users *mocks.MockUserReader, issuer *mocks.MockTokenIssuer) {
+				users.EXPECT().GetByLogin(gomock.Any(), "vadim").Return(validUser, nil)
+				issuer.EXPECT().IssueToken(validUser).Return("", errors.New("issue error"))
+			},
 			wantStatus: http.StatusInternalServerError,
 			wantErr:    "internal error",
 		},
@@ -111,6 +91,13 @@ func TestLoginHandlerPost(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+
+			users := mocks.NewMockUserReader(ctrl)
+			issuer := mocks.NewMockTokenIssuer(ctrl)
+			tt.prepare(users, issuer)
+
 			var body []byte
 			switch v := tt.body.(type) {
 			case string:
@@ -125,7 +112,7 @@ func TestLoginHandlerPost(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewReader(body))
 			rec := httptest.NewRecorder()
-			h := NewLoginHandler(tt.users, tt.issuer)
+			h := NewLoginHandler(users, issuer)
 
 			h.Post(rec, req)
 

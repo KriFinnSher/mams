@@ -23,3 +23,7 @@
 - `2)` Generality: each function/package should do one logical job; no cross-package leakage or unjustified intermediate structs.
 - `3)` Comments only where they add meaning; skip obvious comments.
 - `4)` Tests: table-driven style; scenarios should come from product requirements, not implementation trivia.
+- Shared helpers should be placed in shared packages (for example, HTTP response helpers in `utils/http.go`), not duplicated inside handlers.
+- Interfaces used by handlers/services should be placed in `contract.go` in the same package.
+- `contract.go` must include: `//go:generate mockgen -source=contract.go -destination=mocks/contract.go -package=mocks`
+- Tests must use generated mocks from `mockgen`, not handwritten stubs.

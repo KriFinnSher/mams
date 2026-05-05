@@ -1,23 +1,14 @@
 package auth
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/mams/backend/internal/auth"
-	"github.com/mams/backend/internal/models"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
+	"github.com/mams/backend/internal/utils"
 )
-
-type UserReader interface {
-	GetByLogin(ctx context.Context, login string) (models.User, error)
-}
-
-type TokenIssuer interface {
-	IssueToken(user models.User) (string, error)
-}
 
 type LoginHandler struct {
 	users  UserReader
@@ -40,48 +31,38 @@ type loginResponse struct {
 func (h *LoginHandler) Post(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeError(w, http.StatusBadRequest, "invalid request body")
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	if req.Login == "" || req.Password == "" {
-		writeError(w, http.StatusBadRequest, "login and password are required")
+		utils.WriteError(w, http.StatusBadRequest, "login and password are required")
 		return
 	}
 
 	user, err := h.users.GetByLogin(r.Context(), req.Login)
 	if err != nil {
 		if errors.Is(err, postgresrepo.ErrUserNotFound) {
-			writeError(w, http.StatusUnauthorized, "invalid credentials")
+			utils.WriteError(w, http.StatusUnauthorized, "invalid credentials")
 			return
 		}
-		writeError(w, http.StatusInternalServerError, "internal error")
+		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
 	if err := auth.VerifyPassword(user.PasswordHash, req.Password); err != nil {
 		if errors.Is(err, auth.ErrInvalidPassword) {
-			writeError(w, http.StatusUnauthorized, "invalid credentials")
+			utils.WriteError(w, http.StatusUnauthorized, "invalid credentials")
 			return
 		}
-		writeError(w, http.StatusInternalServerError, "internal error")
+		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
 	token, err := h.issuer.IssueToken(user)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "internal error")
+		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, loginResponse{Token: token})
-}
-
-func writeJSON(w http.ResponseWriter, status int, payload any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(payload)
-}
-
-func writeError(w http.ResponseWriter, status int, message string) {
-	writeJSON(w, status, map[string]string{"error": message})
+	utils.WriteJSON(w, http.StatusOK, loginResponse{Token: token})
 }
