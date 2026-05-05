@@ -17,6 +17,7 @@
 - Prefer explicit constraints and indexes early.
 - Preserve task isolation: one commit per task whenever feasible.
 - Operate only inside this repository. If a task requires actions outside the repo boundary, request explicit access or provide the exact terminal command for the user to run.
+- Respect task scope strictly: implement only what is explicitly required by the current task ID, no extra bootstrap or adjacent features.
 - Go code style priorities:
 - `1)` Laconic code: short, clear names; avoid duplicated checks and over-extraction of tiny one-off helpers.
 - `2)` Generality: each function/package should do one logical job; no cross-package leakage or unjustified intermediate structs.
