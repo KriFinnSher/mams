@@ -17,7 +17,7 @@ type rowScanner interface {
 }
 
 type userQueryer interface {
-	QueryRow(ctx context.Context, sql string, args ...any) rowScanner
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
 type UserRepository struct {

@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -11,7 +12,9 @@ import (
 )
 
 type Config struct {
-	HTTPAddr  string
+	HTTPHost  string
+	HTTPPort  string
+	PostgresDSN string
 	JWTSecret string
 	JWTTTL    time.Duration
 }
@@ -25,22 +28,35 @@ func Get() *Config {
 	once.Do(func() {
 		_ = godotenv.Load()
 
-		httpAddr := os.Getenv("HTTP_ADDR")
-		if httpAddr == "" {
-			httpAddr = ":8080"
+		httpHost := os.Getenv("HTTP_HOST")
+		if httpHost == "" {
+			httpHost = "0.0.0.0"
+		}
+
+		httpPort := os.Getenv("HTTP_PORT")
+		if httpPort == "" {
+			httpPort = "8080"
+		}
+
+		postgresDSN := os.Getenv("POSTGRES_DSN")
+		if postgresDSN == "" {
+			postgresDSN = "postgres://postgres:postgres@localhost:5432/mams?sslmode=disable"
 		}
 
 		jwtSecret := os.Getenv("JWT_SECRET")
-		if jwtSecret == "" {
-			jwtSecret = "dev-secret"
-		}
 
 		cfg = &Config{
-			HTTPAddr:  httpAddr,
+			HTTPHost:  httpHost,
+			HTTPPort:  httpPort,
+			PostgresDSN: postgresDSN,
 			JWTSecret: jwtSecret,
 			JWTTTL:    utils.ParseTTLSeconds(os.Getenv("JWT_TTL"), 3600),
 		}
 	})
 
 	return cfg
+}
+
+func (c *Config) HTTPAddr() string {
+	return fmt.Sprintf("%s:%s", c.HTTPHost, c.HTTPPort)
 }

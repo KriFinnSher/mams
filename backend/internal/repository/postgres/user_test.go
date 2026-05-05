@@ -35,7 +35,7 @@ type testQueryer struct {
 	row rowScanner
 }
 
-func (q testQueryer) QueryRow(_ context.Context, _ string, _ ...any) rowScanner {
+func (q testQueryer) QueryRow(_ context.Context, _ string, _ ...any) pgx.Row {
 	return q.row
 }
 

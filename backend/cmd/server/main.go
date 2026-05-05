@@ -5,46 +5,28 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"golang.org/x/crypto/bcrypt"
 
 	authcore "github.com/mams/backend/internal/auth"
 	"github.com/mams/backend/internal/config"
 	authhandler "github.com/mams/backend/internal/handlers/auth"
-	"github.com/mams/backend/internal/models"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
-	"github.com/mams/backend/internal/utils"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
-
-type memoryUsers struct {
-	users map[string]models.User
-}
-
-func (m memoryUsers) GetByLogin(_ context.Context, login string) (models.User, error) {
-	u, ok := m.users[login]
-	if !ok {
-		return models.User{}, postgresrepo.ErrUserNotFound
-	}
-	return u, nil
-}
 
 func main() {
 	cfg := config.Get()
+	if cfg.JWTSecret == "" {
+		log.Fatal("JWT_SECRET is required")
+	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte("secret"), bcrypt.DefaultCost)
+	pool, err := pgxpool.New(context.Background(), cfg.PostgresDSN)
 	if err != nil {
-		log.Fatalf("hash password: %v", err)
+		log.Fatalf("connect postgres: %v", err)
 	}
+	defer pool.Close()
 
-	users := memoryUsers{
-		users: map[string]models.User{
-			"vadim": {
-				ID:             utils.MustUUID("11111111-1111-1111-1111-111111111111"),
-				OrganizationID: utils.MustUUID("22222222-2222-2222-2222-222222222222"),
-				Login:        "vadim",
-				PasswordHash: string(hash),
-			},
-		},
-	}
+	users := postgresrepo.NewUserRepository(pool)
+
 	issuer, err := authcore.NewJWTIssuer(cfg.JWTSecret, cfg.JWTTTL)
 	if err != nil {
 		log.Fatalf("create jwt issuer: %v", err)
@@ -63,8 +45,9 @@ func main() {
 		_, _ = w.Write([]byte("ok"))
 	})
 
-	log.Printf("server listening on %s", cfg.HTTPAddr)
-	if err := http.ListenAndServe(cfg.HTTPAddr, mux); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	addr := cfg.HTTPAddr()
+	log.Printf("server listening on %s", addr)
+	if err := http.ListenAndServe(addr, mux); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("listen and serve: %v", err)
 	}
 }
