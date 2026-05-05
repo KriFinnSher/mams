@@ -68,3 +68,18 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 
 	return nil
 }
+
+func ResolveMigrationsDir() string {
+	candidates := []string{
+		"migrations/postgres",
+		"/app/migrations/postgres",
+		"backend/migrations/postgres",
+	}
+	for _, dir := range candidates {
+		if _, err := os.Stat(dir); err == nil {
+			return dir
+		}
+	}
+	return filepath.Join("migrations", "postgres")
+}
+

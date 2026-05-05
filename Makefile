@@ -16,4 +16,4 @@ logs:
 
 smoke:
 	curl -fsS http://localhost:8080/healthz
-	curl -sS -i -X POST http://localhost:8080/api/auth/login -H "Content-Type: application/json" --data '{"login":"vadim","password":"secret"}'
+	curl -sS -i -X POST http://localhost:8080/api/auth/login -H "Content-Type: application/json" --data '{"login":"admin","password":"admin"}'

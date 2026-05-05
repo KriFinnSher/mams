@@ -6,18 +6,17 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
 	authcore "github.com/mams/backend/internal/auth"
 	"github.com/mams/backend/internal/bootstrap"
 	"github.com/mams/backend/internal/config"
 	authhandler "github.com/mams/backend/internal/handlers/auth"
 	"github.com/mams/backend/internal/migrator"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
@@ -32,7 +31,7 @@ func main() {
 	}
 	defer pool.Close()
 
-	migrationsDir := resolveMigrationsDir()
+	migrationsDir := migrator.ResolveMigrationsDir()
 	if err := migrator.Up(context.Background(), pool, migrationsDir); err != nil {
 		log.Fatalf("run migrations: %v", err)
 	}
@@ -86,18 +85,4 @@ func main() {
 		log.Fatalf("listen and serve: %v", err)
 	}
 	<-done
-}
-
-func resolveMigrationsDir() string {
-	candidates := []string{
-		"migrations/postgres",
-		"/app/migrations/postgres",
-		"backend/migrations/postgres",
-	}
-	for _, dir := range candidates {
-		if _, err := os.Stat(dir); err == nil {
-			return dir
-		}
-	}
-	return filepath.Join("migrations", "postgres")
 }
