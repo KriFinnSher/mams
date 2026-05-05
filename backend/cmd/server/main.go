@@ -5,6 +5,10 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	authcore "github.com/mams/backend/internal/auth"
 	"github.com/mams/backend/internal/config"
@@ -46,8 +50,29 @@ func main() {
 	})
 
 	addr := cfg.HTTPAddr()
+	srv := &http.Server{
+		Addr:    addr,
+		Handler: mux,
+	}
+
+	done := make(chan struct{})
+	go func() {
+		stop := make(chan os.Signal, 1)
+		signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+		<-stop
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Printf("shutdown error: %v", err)
+		}
+		close(done)
+	}()
+
 	log.Printf("server listening on %s", addr)
-	if err := http.ListenAndServe(addr, mux); err != nil && !errors.Is(err, http.ErrServerClosed) {
+	if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("listen and serve: %v", err)
 	}
+	<-done
 }
