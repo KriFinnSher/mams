@@ -16,3 +16,4 @@
 - Keep migrations incremental and reversible (`up.sql` + `down.sql`).
 - Prefer explicit constraints and indexes early.
 - Preserve task isolation: one commit per task whenever feasible.
+- Operate only inside this repository. If a task requires actions outside the repo boundary, request explicit access or provide the exact terminal command for the user to run.
