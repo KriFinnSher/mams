@@ -15,6 +15,7 @@ import (
 	"github.com/mams/backend/internal/bootstrap"
 	"github.com/mams/backend/internal/config"
 	authhandler "github.com/mams/backend/internal/handlers/auth"
+	serviceshandler "github.com/mams/backend/internal/handlers/services"
 	authmw "github.com/mams/backend/internal/middleware/auth"
 	"github.com/mams/backend/internal/migrator"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
@@ -41,6 +42,7 @@ func main() {
 	}
 
 	users := postgresrepo.NewUserRepository(pool)
+	services := postgresrepo.NewServiceRepositoryPool(pool)
 
 	issuer, err := authcore.NewJWTIssuer(cfg.JWTSecret, cfg.JWTTTL)
 	if err != nil {
@@ -51,6 +53,7 @@ func main() {
 		log.Fatalf("create jwt validator: %v", err)
 	}
 	login := authhandler.NewLoginHandler(users, issuer)
+	servicesH := serviceshandler.NewHandler(services)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/login", func(w http.ResponseWriter, r *http.Request) {
@@ -66,6 +69,13 @@ func main() {
 			return
 		}
 		login.Me(w, r)
+	})))
+	mux.Handle("/api/services", authmw.RequireAuth(validator, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		servicesH.List(w, r)
 	})))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("ok"))

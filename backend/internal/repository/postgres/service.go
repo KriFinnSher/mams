@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/mams/backend/internal/models"
 )
@@ -30,6 +31,26 @@ type ServiceRepository struct {
 
 func NewServiceRepository(q serviceQueryer) *ServiceRepository {
 	return &ServiceRepository{q: q}
+}
+
+type servicePoolAdapter struct {
+	pool *pgxpool.Pool
+}
+
+func (a servicePoolAdapter) QueryRow(ctx context.Context, sql string, args ...any) rowScanner {
+	return a.pool.QueryRow(ctx, sql, args...)
+}
+
+func (a servicePoolAdapter) Query(ctx context.Context, sql string, args ...any) (serviceRows, error) {
+	rows, err := a.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
+func NewServiceRepositoryPool(pool *pgxpool.Pool) *ServiceRepository {
+	return NewServiceRepository(servicePoolAdapter{pool: pool})
 }
 
 func (r *ServiceRepository) Create(ctx context.Context, s models.Service) (models.Service, error) {
