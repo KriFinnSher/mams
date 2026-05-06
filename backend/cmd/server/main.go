@@ -94,6 +94,13 @@ func main() {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
 	}))
+	protected.Handle("/api/services/{id}/settings", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		servicesH.UpdateSettings(w, r)
+	}))
 	mux.Handle("/api/", authmw.RequireAuth(validator, protected))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("ok"))
