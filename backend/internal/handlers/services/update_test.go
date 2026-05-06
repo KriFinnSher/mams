@@ -110,7 +110,7 @@ func TestHandlerUpdateInfo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			m := mocks.NewMockServiceReader(ctrl)
-			h := NewHandler(m, logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
+			h := NewHandler(m, nil, logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
 			req := tt.setup(m)
 			var b []byte
 			switch v := tt.body.(type) {
@@ -128,4 +128,3 @@ func TestHandlerUpdateInfo(t *testing.T) {
 		})
 	}
 }
-
