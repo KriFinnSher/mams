@@ -57,6 +57,21 @@ func (mr *MockServiceReaderMockRecorder) Create(ctx, s any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockServiceReader)(nil).Create), ctx, s)
 }
 
+// GetByID mocks base method.
+func (m *MockServiceReader) GetByID(ctx context.Context, id uuid.UUID) (models.Service, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByID", ctx, id)
+	ret0, _ := ret[0].(models.Service)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByID indicates an expected call of GetByID.
+func (mr *MockServiceReaderMockRecorder) GetByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockServiceReader)(nil).GetByID), ctx, id)
+}
+
 // ListByOrganization mocks base method.
 func (m *MockServiceReader) ListByOrganization(ctx context.Context, orgID uuid.UUID) ([]models.Service, error) {
 	m.ctrl.T.Helper()
