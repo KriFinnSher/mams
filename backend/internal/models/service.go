@@ -24,6 +24,7 @@ type Service struct {
 	RepositoryURL              string
 	DefaultBranch              string
 	GrafanaDashboardUID        string
+	Settings                   map[string]any
 	CreatedAt                  time.Time
 	UpdatedAt                  time.Time
 }

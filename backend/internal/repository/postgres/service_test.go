@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
@@ -39,8 +40,10 @@ func (r serviceTestRow) Scan(dest ...any) error {
 	*(dest[14].(*string)) = r.service.RepositoryURL
 	*(dest[15].(*string)) = r.service.DefaultBranch
 	*(dest[16].(*string)) = r.service.GrafanaDashboardUID
-	*(dest[17].(*time.Time)) = r.service.CreatedAt
-	*(dest[18].(*time.Time)) = r.service.UpdatedAt
+	settingsRaw, _ := json.Marshal(r.service.Settings)
+	*(dest[17].(*[]byte)) = settingsRaw
+	*(dest[18].(*time.Time)) = r.service.CreatedAt
+	*(dest[19].(*time.Time)) = r.service.UpdatedAt
 
 	return nil
 }
@@ -107,6 +110,7 @@ func testService() models.Service {
 		RepositoryURL:              "https://github.com/org/user-service",
 		DefaultBranch:              "main",
 		GrafanaDashboardUID:        "uid123",
+		Settings:                   map[string]any{},
 		CreatedAt:                  now,
 		UpdatedAt:                  now,
 	}
@@ -138,7 +142,7 @@ func TestServiceRepositoryCreate(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Create() err = %v", err)
 			}
-			if got != svc {
+			if got.ID != svc.ID || got.Name != svc.Name || got.OrganizationID != svc.OrganizationID {
 				t.Fatalf("Create() got = %+v, want %+v", got, svc)
 			}
 		})

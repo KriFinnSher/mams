@@ -12,8 +12,7 @@ import (
 )
 
 type updateSettingsRequest struct {
-	MinimumTestCoverageEnabled bool `json:"minimum_test_coverage_enabled"`
-	MinimumTestCoverage        int  `json:"minimum_test_coverage"`
+	Settings map[string]any `json:"settings"`
 }
 
 func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
@@ -49,12 +48,19 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.MinimumTestCoverage < 0 || req.MinimumTestCoverage > 100 {
-		utils.WriteError(w, http.StatusBadRequest, "minimum_test_coverage must be between 0 and 100")
+	if req.Settings == nil {
+		req.Settings = map[string]any{}
+	}
+	if err := validateSettingsPatch(req.Settings); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if touchesOwnerOnlySettings(req.Settings) && current.OwnerUserID != claims.UserID {
+		utils.WriteError(w, http.StatusForbidden, "owner permissions required")
 		return
 	}
 
-	updated, err := h.services.UpdateSettings(r.Context(), id, req.MinimumTestCoverageEnabled, req.MinimumTestCoverage)
+	updated, err := h.services.UpdateSettings(r.Context(), id, req.Settings)
 	if err != nil {
 		if errors.Is(err, postgresrepo.ErrServiceNotFound) {
 			utils.WriteError(w, http.StatusNotFound, "service not found")
@@ -66,9 +72,7 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSON(w, http.StatusOK, map[string]any{
-		"id":                            updated.ID.String(),
-		"minimum_test_coverage_enabled": updated.MinimumTestCoverageEnabled,
-		"minimum_test_coverage":         updated.MinimumTestCoverage,
+		"id":       updated.ID.String(),
+		"settings": updated.Settings,
 	})
 }
-

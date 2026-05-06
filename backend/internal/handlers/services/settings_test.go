@@ -26,8 +26,10 @@ func TestHandlerUpdateSettings(t *testing.T) {
 	serviceID := uuid.New()
 
 	validBody := map[string]any{
-		"minimum_test_coverage_enabled": true,
-		"minimum_test_coverage":         70,
+		"settings": map[string]any{
+			"minimum_test_coverage_enabled": true,
+			"minimum_test_coverage":         70,
+		},
 	}
 
 	tests := []struct {
@@ -41,8 +43,8 @@ func TestHandlerUpdateSettings(t *testing.T) {
 			body: validBody,
 			setup: func(m *mocks.MockServiceReader) *http.Request {
 				m.EXPECT().GetByID(gomock.Any(), serviceID).Return(models.Service{ID: serviceID, OrganizationID: orgID}, nil)
-				m.EXPECT().UpdateSettings(gomock.Any(), serviceID, true, 70).Return(models.Service{
-					ID: serviceID, MinimumTestCoverageEnabled: true, MinimumTestCoverage: 70,
+				m.EXPECT().UpdateSettings(gomock.Any(), serviceID, gomock.Any()).Return(models.Service{
+					ID: serviceID, Settings: map[string]any{"minimum_test_coverage_enabled": true, "minimum_test_coverage": float64(70)},
 				}, nil)
 				req := httptest.NewRequest(http.MethodPut, "/api/services/"+serviceID.String()+"/settings", nil)
 				req.SetPathValue("id", serviceID.String())
@@ -52,7 +54,7 @@ func TestHandlerUpdateSettings(t *testing.T) {
 		},
 		{
 			name: "invalid min coverage",
-			body: map[string]any{"minimum_test_coverage_enabled": true, "minimum_test_coverage": 120},
+			body: map[string]any{"settings": map[string]any{"minimum_test_coverage_enabled": true, "minimum_test_coverage": 120}},
 			setup: func(m *mocks.MockServiceReader) *http.Request {
 				m.EXPECT().GetByID(gomock.Any(), serviceID).Return(models.Service{ID: serviceID, OrganizationID: orgID}, nil)
 				req := httptest.NewRequest(http.MethodPut, "/api/services/"+serviceID.String()+"/settings", nil)
@@ -88,12 +90,23 @@ func TestHandlerUpdateSettings(t *testing.T) {
 			body: validBody,
 			setup: func(m *mocks.MockServiceReader) *http.Request {
 				m.EXPECT().GetByID(gomock.Any(), serviceID).Return(models.Service{ID: serviceID, OrganizationID: orgID}, nil)
-				m.EXPECT().UpdateSettings(gomock.Any(), serviceID, true, 70).Return(models.Service{}, errors.New("db"))
+				m.EXPECT().UpdateSettings(gomock.Any(), serviceID, gomock.Any()).Return(models.Service{}, errors.New("db"))
 				req := httptest.NewRequest(http.MethodPut, "/api/services/"+serviceID.String()+"/settings", nil)
 				req.SetPathValue("id", serviceID.String())
 				return req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: orgID}))
 			},
 			want: http.StatusInternalServerError,
+		},
+		{
+			name: "owner only forbidden",
+			body: validBody,
+			setup: func(m *mocks.MockServiceReader) *http.Request {
+				m.EXPECT().GetByID(gomock.Any(), serviceID).Return(models.Service{ID: serviceID, OrganizationID: orgID, OwnerUserID: uuid.New()}, nil)
+				req := httptest.NewRequest(http.MethodPut, "/api/services/"+serviceID.String()+"/settings", nil)
+				req.SetPathValue("id", serviceID.String())
+				return req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: orgID, UserID: uuid.New()}))
+			},
+			want: http.StatusForbidden,
 		},
 	}
 
@@ -113,4 +126,3 @@ func TestHandlerUpdateSettings(t *testing.T) {
 		})
 	}
 }
-

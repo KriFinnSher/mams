@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
 	"github.com/google/uuid"
@@ -58,13 +59,13 @@ func (r *ServiceRepository) Create(ctx context.Context, s models.Service) (model
 INSERT INTO services (
     organization_id, created_by_user_id, owner_user_id, name, description, type, version,
     test_coverage, minimum_test_coverage_enabled, minimum_test_coverage, pii_sensitive,
-    responsible_team_ref, importance, repository_url, default_branch, grafana_dashboard_uid
+    responsible_team_ref, importance, repository_url, default_branch, grafana_dashboard_uid, settings
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
 RETURNING
     id, organization_id, created_by_user_id, owner_user_id, name, description, type, version,
     test_coverage, minimum_test_coverage_enabled, minimum_test_coverage, pii_sensitive,
-    responsible_team_ref, importance, repository_url, default_branch, grafana_dashboard_uid,
+    responsible_team_ref, importance, repository_url, default_branch, grafana_dashboard_uid, settings,
     created_at, updated_at
 `
 
@@ -87,6 +88,7 @@ RETURNING
 		s.RepositoryURL,
 		s.DefaultBranch,
 		s.GrafanaDashboardUID,
+		s.Settings,
 	))
 	if err != nil {
 		return models.Service{}, err
@@ -100,7 +102,7 @@ func (r *ServiceRepository) GetByID(ctx context.Context, id uuid.UUID) (models.S
 SELECT
     id, organization_id, created_by_user_id, owner_user_id, name, description, type, version,
     test_coverage, minimum_test_coverage_enabled, minimum_test_coverage, pii_sensitive,
-    responsible_team_ref, importance, repository_url, default_branch, grafana_dashboard_uid,
+    responsible_team_ref, importance, repository_url, default_branch, grafana_dashboard_uid, settings,
     created_at, updated_at
 FROM services
 WHERE id = $1
@@ -119,7 +121,7 @@ func (r *ServiceRepository) ListByOrganization(ctx context.Context, orgID uuid.U
 SELECT
     id, organization_id, created_by_user_id, owner_user_id, name, description, type, version,
     test_coverage, minimum_test_coverage_enabled, minimum_test_coverage, pii_sensitive,
-    responsible_team_ref, importance, repository_url, default_branch, grafana_dashboard_uid,
+    responsible_team_ref, importance, repository_url, default_branch, grafana_dashboard_uid, settings,
     created_at, updated_at
 FROM services
 WHERE organization_id = $1
@@ -160,12 +162,13 @@ SET
     repository_url = $8,
     default_branch = $9,
     grafana_dashboard_uid = $10,
+    settings = $11,
     updated_at = NOW()
 WHERE id = $1
 RETURNING
     id, organization_id, created_by_user_id, owner_user_id, name, description, type, version,
     test_coverage, minimum_test_coverage_enabled, minimum_test_coverage, pii_sensitive,
-    responsible_team_ref, importance, repository_url, default_branch, grafana_dashboard_uid,
+    responsible_team_ref, importance, repository_url, default_branch, grafana_dashboard_uid, settings,
     created_at, updated_at
 `
 
@@ -182,6 +185,7 @@ RETURNING
 		s.RepositoryURL,
 		s.DefaultBranch,
 		s.GrafanaDashboardUID,
+		s.Settings,
 	))
 	if err != nil {
 		return models.Service{}, mapServiceErr(err)
@@ -190,22 +194,28 @@ RETURNING
 	return updated, nil
 }
 
-func (r *ServiceRepository) UpdateSettings(ctx context.Context, id uuid.UUID, enabled bool, minimum int) (models.Service, error) {
+func (r *ServiceRepository) UpdateSettings(ctx context.Context, id uuid.UUID, settings map[string]any) (models.Service, error) {
+	raw, err := json.Marshal(settings)
+	if err != nil {
+		return models.Service{}, err
+	}
+
 	const q = `
 UPDATE services
 SET
-    minimum_test_coverage_enabled = $2,
-    minimum_test_coverage = $3,
+    settings = $2::jsonb,
+    minimum_test_coverage_enabled = COALESCE(($2::jsonb->>'minimum_test_coverage_enabled')::boolean, minimum_test_coverage_enabled),
+    minimum_test_coverage = COALESCE(($2::jsonb->>'minimum_test_coverage')::integer, minimum_test_coverage),
     updated_at = NOW()
 WHERE id = $1
 RETURNING
     id, organization_id, created_by_user_id, owner_user_id, name, description, type, version,
     test_coverage, minimum_test_coverage_enabled, minimum_test_coverage, pii_sensitive,
-    responsible_team_ref, importance, repository_url, default_branch, grafana_dashboard_uid,
+    responsible_team_ref, importance, repository_url, default_branch, grafana_dashboard_uid, settings,
     created_at, updated_at
 `
 
-	updated, err := scanService(r.q.QueryRow(ctx, q, id, enabled, minimum))
+	updated, err := scanService(r.q.QueryRow(ctx, q, id, string(raw)))
 	if err != nil {
 		return models.Service{}, mapServiceErr(err)
 	}
@@ -215,6 +225,7 @@ RETURNING
 
 func scanService(r rowScanner) (models.Service, error) {
 	var s models.Service
+	var settingsRaw []byte
 	if err := r.Scan(
 		&s.ID,
 		&s.OrganizationID,
@@ -233,10 +244,17 @@ func scanService(r rowScanner) (models.Service, error) {
 		&s.RepositoryURL,
 		&s.DefaultBranch,
 		&s.GrafanaDashboardUID,
+		&settingsRaw,
 		&s.CreatedAt,
 		&s.UpdatedAt,
 	); err != nil {
 		return models.Service{}, err
+	}
+	s.Settings = map[string]any{}
+	if len(settingsRaw) > 0 {
+		if err := json.Unmarshal(settingsRaw, &s.Settings); err != nil {
+			return models.Service{}, err
+		}
 	}
 
 	return s, nil

@@ -103,16 +103,16 @@ func (mr *MockServiceReaderMockRecorder) UpdateInfo(ctx, s any) *gomock.Call {
 }
 
 // UpdateSettings mocks base method.
-func (m *MockServiceReader) UpdateSettings(ctx context.Context, id uuid.UUID, enabled bool, minimum int) (models.Service, error) {
+func (m *MockServiceReader) UpdateSettings(ctx context.Context, id uuid.UUID, settings map[string]any) (models.Service, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateSettings", ctx, id, enabled, minimum)
+	ret := m.ctrl.Call(m, "UpdateSettings", ctx, id, settings)
 	ret0, _ := ret[0].(models.Service)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // UpdateSettings indicates an expected call of UpdateSettings.
-func (mr *MockServiceReaderMockRecorder) UpdateSettings(ctx, id, enabled, minimum any) *gomock.Call {
+func (mr *MockServiceReaderMockRecorder) UpdateSettings(ctx, id, settings any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSettings", reflect.TypeOf((*MockServiceReader)(nil).UpdateSettings), ctx, id, enabled, minimum)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSettings", reflect.TypeOf((*MockServiceReader)(nil).UpdateSettings), ctx, id, settings)
 }
