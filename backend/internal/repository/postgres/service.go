@@ -149,6 +149,41 @@ ORDER BY created_at DESC
 	return out, nil
 }
 
+func (r *ServiceRepository) ListUserNonObserverRoles(ctx context.Context, userID, orgID uuid.UUID) ([]models.ProfileServiceRole, error) {
+	const q = `
+SELECT s.id, s.name, 'service_owner' AS role
+FROM services s
+WHERE s.organization_id = $2
+  AND s.owner_user_id = $1
+UNION
+SELECT s.id, s.name, sa.role
+FROM service_access sa
+JOIN services s ON s.id = sa.service_id
+WHERE sa.user_id = $1
+  AND s.organization_id = $2
+  AND sa.role <> 'observer'
+ORDER BY 2
+`
+	rows, err := r.q.Query(ctx, q, userID, orgID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := make([]models.ProfileServiceRole, 0)
+	for rows.Next() {
+		var item models.ProfileServiceRole
+		if err := rows.Scan(&item.ServiceID, &item.ServiceName, &item.Role); err != nil {
+			return nil, err
+		}
+		out = append(out, item)
+	}
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+	return out, nil
+}
+
 func (r *ServiceRepository) UpdateInfo(ctx context.Context, s models.Service) (models.Service, error) {
 	const q = `
 UPDATE services

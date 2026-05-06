@@ -12,6 +12,7 @@ import (
 type UserReader interface {
 	GetByID(ctx context.Context, id uuid.UUID) (models.User, error)
 	GetByLogin(ctx context.Context, login string) (models.User, error)
+	ListUserNonObserverRoles(ctx context.Context, userID, orgID uuid.UUID) ([]models.ProfileServiceRole, error)
 }
 
 type TokenIssuer interface {

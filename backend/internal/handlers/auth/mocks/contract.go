@@ -72,6 +72,21 @@ func (mr *MockUserReaderMockRecorder) GetByLogin(ctx, login any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByLogin", reflect.TypeOf((*MockUserReader)(nil).GetByLogin), ctx, login)
 }
 
+// ListUserNonObserverRoles mocks base method.
+func (m *MockUserReader) ListUserNonObserverRoles(ctx context.Context, userID, orgID uuid.UUID) ([]models.ProfileServiceRole, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListUserNonObserverRoles", ctx, userID, orgID)
+	ret0, _ := ret[0].([]models.ProfileServiceRole)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListUserNonObserverRoles indicates an expected call of ListUserNonObserverRoles.
+func (mr *MockUserReaderMockRecorder) ListUserNonObserverRoles(ctx, userID, orgID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListUserNonObserverRoles", reflect.TypeOf((*MockUserReader)(nil).ListUserNonObserverRoles), ctx, userID, orgID)
+}
+
 // MockTokenIssuer is a mock of TokenIssuer interface.
 type MockTokenIssuer struct {
 	ctrl     *gomock.Controller

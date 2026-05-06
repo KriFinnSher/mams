@@ -41,6 +41,13 @@ func TestLoginHandler_Me(t *testing.T) {
 					Login:          "admin",
 					OrganizationID: orgID,
 				}, nil)
+				m.EXPECT().ListUserNonObserverRoles(gomock.Any(), userID, orgID).Return([]models.ProfileServiceRole{
+					{
+						ServiceID:   uuid.MustParse("f4b21e0e-31bd-4d3f-a607-d7af0f0f8f8e"),
+						ServiceName: "user-service",
+						Role:        "developer",
+					},
+				}, nil)
 				req := httptest.NewRequest(http.MethodGet, "/api/auth/me", nil)
 				req = req.WithContext(authmw.WithClaims(req.Context(), authmw.Claims{
 					UserID:         userID,
@@ -54,6 +61,13 @@ func TestLoginHandler_Me(t *testing.T) {
 					"id":              "a08f1e57-df6a-4f31-bfd1-73dc497d1820",
 					"login":           "admin",
 					"organization_id": "64caed96-34db-4822-8de0-d77d4bb6be43",
+					"services": []any{
+						map[string]any{
+							"service_id":   "f4b21e0e-31bd-4d3f-a607-d7af0f0f8f8e",
+							"service_name": "user-service",
+							"role":         "developer",
+						},
+					},
 				},
 			},
 		},
@@ -108,6 +122,23 @@ func TestLoginHandler_Me(t *testing.T) {
 				t.Fatalf("body len = %d, want %d", len(got), len(tc.want.body))
 			}
 			for k, v := range tc.want.body {
+				if k == "services" {
+					gotServices, ok := got["services"].([]any)
+					if !ok || len(gotServices) != 1 {
+						t.Fatalf("services invalid: %v", got["services"])
+					}
+					item, ok := gotServices[0].(map[string]any)
+					if !ok {
+						t.Fatalf("service item invalid: %T", gotServices[0])
+					}
+					wantItem := v.([]any)[0].(map[string]any)
+					for wk, wv := range wantItem {
+						if item[wk] != wv {
+							t.Fatalf("services[0][%q] = %v, want %v", wk, item[wk], wv)
+						}
+					}
+					continue
+				}
 				if got[k] != v {
 					t.Fatalf("body[%q] = %v, want %v", k, got[k], v)
 				}

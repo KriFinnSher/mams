@@ -45,6 +45,7 @@ func main() {
 
 	users := postgresrepo.NewUserRepository(pool)
 	services := postgresrepo.NewServiceRepositoryPool(pool)
+	profile := postgresrepo.NewProfileReader(users, services)
 
 	issuer, err := authcore.NewJWTIssuer(cfg.JWTSecret, cfg.JWTTTL)
 	if err != nil {
@@ -55,7 +56,7 @@ func main() {
 		log.Fatalf("create jwt validator: %v", err)
 	}
 	logger := logx.New(slog.Default())
-	login := authhandler.NewLoginHandler(users, issuer, logger)
+	login := authhandler.NewLoginHandler(profile, issuer, logger)
 	servicesH := serviceshandler.NewHandler(services, logger)
 
 	mux := http.NewServeMux()
