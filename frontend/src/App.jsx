@@ -1,4 +1,5 @@
 import { Link, Navigate, Route, Routes, useParams } from "react-router-dom";
+import { useState } from "react";
 import "./styles.css";
 
 function Layout({ title }) {
@@ -16,7 +17,61 @@ function Layout({ title }) {
 }
 
 function LoginPage() {
-  return <Layout title="Страница входа" />;
+  const [status, setStatus] = useState("");
+
+  async function onSubmit(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const login = String(form.get("login") || "");
+    const password = String(form.get("password") || "");
+
+    if (!login || !password) {
+      setStatus("Логин и пароль обязательны.");
+      return;
+    }
+
+    setStatus("Выполняется вход...");
+
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ login, password }),
+      });
+      if (!response.ok) {
+        setStatus("Ошибка входа.");
+        return;
+      }
+      const data = await response.json();
+      if (!data.token) {
+        setStatus("Токен отсутствует в ответе.");
+        return;
+      }
+      localStorage.setItem("mams_token", data.token);
+      setStatus("Токен сохранен в localStorage.");
+    } catch {
+      setStatus("Не удалось подключиться к backend.");
+    }
+  }
+
+  return (
+    <main className="page">
+      <h1>Вход</h1>
+      <p className="subtitle">Войдите в MAMS.</p>
+      <form className="login-form" onSubmit={onSubmit}>
+        <label>
+          Логин
+          <input type="text" name="login" autoComplete="username" required />
+        </label>
+        <label>
+          Пароль
+          <input type="password" name="password" autoComplete="current-password" required />
+        </label>
+        <button type="submit">Войти</button>
+      </form>
+      <p className="status">{status}</p>
+    </main>
+  );
 }
 
 function ServicesPage() {

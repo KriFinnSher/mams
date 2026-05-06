@@ -33,3 +33,42 @@ h1 {
   text-decoration: none;
   color: #0f62fe;
 }
+
+.subtitle {
+  margin: 0 0 16px;
+  color: #5f6b7a;
+}
+
+.login-form {
+  max-width: 420px;
+  display: grid;
+  gap: 12px;
+}
+
+.login-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.login-form input {
+  height: 40px;
+  border: 1px solid #d6dce3;
+  border-radius: 10px;
+  padding: 0 12px;
+}
+
+.login-form button {
+  height: 42px;
+  border: 0;
+  border-radius: 10px;
+  background: #0f62fe;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.status {
+  min-height: 20px;
+  margin-top: 10px;
+  color: #5f6b7a;
+}
