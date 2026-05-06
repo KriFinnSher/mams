@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -87,7 +89,7 @@ func TestLoginHandler_Me(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			users := mocks.NewMockUserReader(ctrl)
-			h := NewLoginHandler(users, nil)
+			h := NewLoginHandler(users, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
 			req := tc.setup(users)
 			rec := httptest.NewRecorder()
 

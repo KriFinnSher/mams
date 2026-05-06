@@ -3,6 +3,7 @@ package auth
 import (
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/mams/backend/internal/auth"
@@ -13,10 +14,11 @@ import (
 type LoginHandler struct {
 	users  UserReader
 	issuer TokenIssuer
+	log    *slog.Logger
 }
 
-func NewLoginHandler(users UserReader, issuer TokenIssuer) *LoginHandler {
-	return &LoginHandler{users: users, issuer: issuer}
+func NewLoginHandler(users UserReader, issuer TokenIssuer, log *slog.Logger) *LoginHandler {
+	return &LoginHandler{users: users, issuer: issuer, log: log}
 }
 
 type loginRequest struct {
@@ -45,6 +47,7 @@ func (h *LoginHandler) Post(w http.ResponseWriter, r *http.Request) {
 			utils.WriteError(w, http.StatusUnauthorized, "invalid credentials")
 			return
 		}
+		h.log.Error("get user by login failed", "err", err, "login", req.Login)
 		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
@@ -54,12 +57,14 @@ func (h *LoginHandler) Post(w http.ResponseWriter, r *http.Request) {
 			utils.WriteError(w, http.StatusUnauthorized, "invalid credentials")
 			return
 		}
+		h.log.Error("verify password failed", "err", err, "login", req.Login)
 		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
 	token, err := h.issuer.IssueToken(user)
 	if err != nil {
+		h.log.Error("issue token failed", "err", err, "user_id", user.ID)
 		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}

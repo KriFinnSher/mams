@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -103,7 +105,7 @@ func TestHandlerGet(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			repo := mocks.NewMockServiceReader(ctrl)
-			h := NewHandler(repo)
+			h := NewHandler(repo, slog.New(slog.NewTextHandler(io.Discard, nil)))
 			req := tt.setup(repo)
 			rec := httptest.NewRecorder()
 

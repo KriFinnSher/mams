@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -52,8 +53,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("create jwt validator: %v", err)
 	}
-	login := authhandler.NewLoginHandler(users, issuer)
-	servicesH := serviceshandler.NewHandler(services)
+	logger := slog.Default()
+	login := authhandler.NewLoginHandler(users, issuer, logger)
+	servicesH := serviceshandler.NewHandler(services, logger)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/login", func(w http.ResponseWriter, r *http.Request) {

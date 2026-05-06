@@ -29,6 +29,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 			utils.WriteError(w, http.StatusNotFound, "service not found")
 			return
 		}
+		h.log.Error("get service by id failed", "err", err, "service_id", id)
 		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}

@@ -28,6 +28,7 @@ func (h *LoginHandler) Me(w http.ResponseWriter, r *http.Request) {
 			utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
+		h.log.Error("get user by id failed", "err", err, "user_id", claims.UserID)
 		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}

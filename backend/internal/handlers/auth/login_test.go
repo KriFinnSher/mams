@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -112,7 +114,7 @@ func TestLoginHandlerPost(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewReader(body))
 			rec := httptest.NewRecorder()
-			h := NewLoginHandler(users, issuer)
+			h := NewLoginHandler(users, issuer, slog.New(slog.NewTextHandler(io.Discard, nil)))
 
 			h.Post(rec, req)
 
