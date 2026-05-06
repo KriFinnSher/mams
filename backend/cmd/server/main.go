@@ -23,6 +23,7 @@ import (
 	"github.com/mams/backend/internal/migrator"
 	mongorepo "github.com/mams/backend/internal/repository/mongo"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
+	"github.com/mams/backend/internal/ws"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -69,8 +70,9 @@ func main() {
 		log.Fatalf("create jwt validator: %v", err)
 	}
 	logger := logx.New(slog.Default())
+	hub := ws.NewHub()
 	login := authhandler.NewLoginHandler(profile, issuer, logger)
-	servicesH := serviceshandler.NewHandler(services, logsRepo, logger)
+	servicesH := serviceshandler.NewHandler(services, logsRepo, hub, logger)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/login", func(w http.ResponseWriter, r *http.Request) {
@@ -125,7 +127,22 @@ func main() {
 		}
 		servicesH.GetLogs(w, r)
 	})))
+	protected.Handle("/api/services/{id}/logs/stream", rbacmw.RequireLogsAccess(services, access, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		servicesH.StreamLogs(w, r)
+	})))
 	mux.Handle("/api/", authmw.RequireAuth(validator, protected))
+
+	mux.HandleFunc("/api/internal/services/{id}/logs", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		servicesH.IngestLog(w, r)
+	})
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("ok"))
 	})

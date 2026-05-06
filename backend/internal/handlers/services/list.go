@@ -6,16 +6,18 @@ import (
 	"github.com/mams/backend/internal/logx"
 	authmw "github.com/mams/backend/internal/middleware/auth"
 	"github.com/mams/backend/internal/utils"
+	"github.com/mams/backend/internal/ws"
 )
 
 type Handler struct {
 	services ServiceReader
 	logs     LogReader
+	wsHub    *ws.Hub
 	log      *logx.Logger
 }
 
-func NewHandler(services ServiceReader, logs LogReader, log *logx.Logger) *Handler {
-	return &Handler{services: services, logs: logs, log: log}
+func NewHandler(services ServiceReader, logs LogReader, wsHub *ws.Hub, log *logx.Logger) *Handler {
+	return &Handler{services: services, logs: logs, wsHub: wsHub, log: log}
 }
 
 type serviceItem struct {

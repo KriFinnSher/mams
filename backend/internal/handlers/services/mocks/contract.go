@@ -141,6 +141,20 @@ func (m *MockLogReader) EXPECT() *MockLogReaderMockRecorder {
 	return m.recorder
 }
 
+// Append mocks base method.
+func (m *MockLogReader) Append(ctx context.Context, serviceID uuid.UUID, env, level, message string) *models.LogEntry {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Append", ctx, serviceID, env, level, message)
+	ret0, _ := ret[0].(*models.LogEntry)
+	return ret0
+}
+
+// Append indicates an expected call of Append.
+func (mr *MockLogReaderMockRecorder) Append(ctx, serviceID, env, level, message any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Append", reflect.TypeOf((*MockLogReader)(nil).Append), ctx, serviceID, env, level, message)
+}
+
 // ListByService mocks base method.
 func (m *MockLogReader) ListByService(ctx context.Context, serviceID uuid.UUID, filter models.LogFilter) ([]models.LogEntry, error) {
 	m.ctrl.T.Helper()

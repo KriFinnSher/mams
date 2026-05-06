@@ -49,6 +49,13 @@ func (c testCollection) Find(context.Context, any, ...*options.FindOptions) (cur
 	return c.cur, nil
 }
 
+func (c testCollection) InsertOne(context.Context, any) (any, error) {
+	if c.err != nil {
+		return nil, c.err
+	}
+	return "inserted-id", nil
+}
+
 func TestLogsRepositoryListByService(t *testing.T) {
 	serviceID := uuid.New()
 	now := time.Now().UTC().Unix()

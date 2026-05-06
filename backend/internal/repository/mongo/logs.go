@@ -3,6 +3,7 @@ package mongo
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/mams/backend/internal/models"
@@ -20,6 +21,7 @@ type cursor interface {
 
 type collection interface {
 	Find(ctx context.Context, filter any, opts ...*options.FindOptions) (cursor, error)
+	InsertOne(ctx context.Context, document any) (any, error)
 }
 
 type mongoCollection struct {
@@ -28,6 +30,10 @@ type mongoCollection struct {
 
 func (m mongoCollection) Find(ctx context.Context, filter any, opts ...*options.FindOptions) (cursor, error) {
 	return m.col.Find(ctx, filter, opts...)
+}
+
+func (m mongoCollection) InsertOne(ctx context.Context, document any) (any, error) {
+	return m.col.InsertOne(ctx, document)
 }
 
 type LogsRepository struct {
@@ -121,4 +127,33 @@ func (r *LogsRepository) ListByService(ctx context.Context, serviceID uuid.UUID,
 		return nil, err
 	}
 	return out, nil
+}
+
+func (r *LogsRepository) Append(ctx context.Context, serviceID uuid.UUID, env, level, message string) *models.LogEntry {
+	if r.col == nil {
+		return nil
+	}
+
+	now := time.Now().Unix()
+	doc := bson.M{
+		"service_id":   serviceID.String(),
+		"environment": env,
+		"level":        level,
+		"message":      message,
+		"timestamp":    now,
+		"created_at":   now,
+	}
+
+	_, err := r.col.InsertOne(ctx, doc)
+	if err != nil {
+		return nil
+	}
+
+	return &models.LogEntry{
+		ServiceID:   serviceID,
+		Environment: env,
+		Level:       level,
+		Message:     message,
+		Timestamp:   time.Unix(now, 0),
+	}
 }

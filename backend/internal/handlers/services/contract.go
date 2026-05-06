@@ -19,4 +19,5 @@ type ServiceReader interface {
 
 type LogReader interface {
 	ListByService(ctx context.Context, serviceID uuid.UUID, filter models.LogFilter) ([]models.LogEntry, error)
+	Append(ctx context.Context, serviceID uuid.UUID, env, level, message string) *models.LogEntry
 }

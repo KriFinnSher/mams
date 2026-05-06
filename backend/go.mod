@@ -25,4 +25,5 @@ require (
 	github.com/youmark/pkcs8 v0.0.0-20240726163527-a2c0da244d78 // indirect
 	golang.org/x/sync v0.16.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
+	nhooyr.io/websocket v1.8.17 // indirect
 )

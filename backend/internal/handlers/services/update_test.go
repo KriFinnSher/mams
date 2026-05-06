@@ -17,6 +17,7 @@ import (
 	authmw "github.com/mams/backend/internal/middleware/auth"
 	"github.com/mams/backend/internal/models"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
+	"github.com/mams/backend/internal/ws"
 	"go.uber.org/mock/gomock"
 )
 
@@ -110,7 +111,7 @@ func TestHandlerUpdateInfo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			m := mocks.NewMockServiceReader(ctrl)
-			h := NewHandler(m, nil, logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
+			h := NewHandler(m, nil, ws.NewHub(), logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
 			req := tt.setup(m)
 			var b []byte
 			switch v := tt.body.(type) {
