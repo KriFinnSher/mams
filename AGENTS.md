@@ -6,10 +6,33 @@
 2. Clarify ambiguities only if they block safe implementation.
 3. Implement the task as an isolated, minimal change.
 4. Validate locally with relevant checks (tests, curl, SQL checks, etc.).
-5. Commit with message format:
-   `[TASK-ID] <task title>`
+5. Commit with message format: `[TASK-ID] <task title>`
 6. Do not push until explicit user instruction.
 7. Keep infra tasks runnable locally first, so the repo can be cloned to a VM and reused with minimal changes.
+
+## Commands
+
+```bash
+# Backend
+make up          # start all services (docker compose)
+make down       # stop services
+make smoke      # health check + login test
+go test ./...   # run all backend tests
+go test ./internal/handlers/auth  # run single package tests
+
+# Frontend
+cd frontend && npm run dev      # dev server on localhost:5173
+cd frontend && npm run build   # production build to frontend/dist
+cd frontend && npm run lint  # lint check
+```
+
+## Architecture
+
+- **Backend** (port 8081): Go 1.24, chi router, pgx + mongo-driver
+- **Frontend** (served via nginx on port 3000): React 18, Vite
+- **Databases**: PostgreSQL (main data), MongoDB (service logs)
+- **Entry point**: `backend/cmd/server/main.go`
+- **Migrations**: `backend/migrations/postgres/*.sql` (run auto on startup)
 
 ## Conventions
 
@@ -18,7 +41,9 @@
 - Preserve task isolation: one commit per task whenever feasible.
 - Operate only inside this repository. If a task requires actions outside the repo boundary, request explicit access or provide the exact terminal command for the user to run.
 - Respect task scope strictly: implement only what is explicitly required by the current task ID, no extra bootstrap or adjacent features.
-- Go code style priorities:
+
+### Go Code Style
+
 - `1)` Laconic code: short, clear names; avoid duplicated checks and over-extraction of tiny one-off helpers.
 - `2)` Generality: each function/package should do one logical job; no cross-package leakage or unjustified intermediate structs.
 - `3)` Comments only where they add meaning; skip obvious comments.
