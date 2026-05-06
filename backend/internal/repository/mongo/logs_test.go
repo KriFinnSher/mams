@@ -56,7 +56,7 @@ func TestLogsRepositoryListByService(t *testing.T) {
 	repo := NewLogsRepository(testCollection{
 		cur: &testCursor{
 			items: []logDoc{
-				{ID: "1", ServiceID: serviceID.String(), Environment: "dev", Level: "info", Message: "ok", Timestamp: now},
+				{ID: "1", ServiceID: serviceID.String(), UserID: "u-1", Environment: "dev", Level: "info", Message: "ok", Timestamp: now},
 			},
 		},
 	})
@@ -74,5 +74,7 @@ func TestLogsRepositoryListByService(t *testing.T) {
 	if got[0].Level != "info" {
 		t.Fatalf("level = %s, want info", got[0].Level)
 	}
+	if got[0].UserID != "u-1" {
+		t.Fatalf("user_id = %s, want u-1", got[0].UserID)
+	}
 }
-

@@ -31,6 +31,7 @@ func NewLogsRepository(col collection) *LogsRepository {
 type logDoc struct {
 	ID          any       `bson:"_id"`
 	ServiceID   string    `bson:"service_id"`
+	UserID      string    `bson:"user_id"`
 	Environment string    `bson:"environment"`
 	Level       string    `bson:"level"`
 	Message     string    `bson:"message"`
@@ -90,6 +91,7 @@ func (r *LogsRepository) ListByService(ctx context.Context, serviceID uuid.UUID,
 		out = append(out, models.LogEntry{
 			ID:          toID(d.ID),
 			ServiceID:   id,
+			UserID:      d.UserID,
 			Environment: d.Environment,
 			Level:       d.Level,
 			Message:     d.Message,

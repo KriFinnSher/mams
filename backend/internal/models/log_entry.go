@@ -9,6 +9,7 @@ import (
 type LogEntry struct {
 	ID          string
 	ServiceID   uuid.UUID
+	UserID      string
 	Environment string
 	Level       string
 	Message     string
