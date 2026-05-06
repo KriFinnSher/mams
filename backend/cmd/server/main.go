@@ -95,11 +95,14 @@ func main() {
 		}
 	}))
 	protected.Handle("/api/services/{id}/settings", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPut {
+		switch r.Method {
+		case http.MethodGet:
+			servicesH.GetSettings(w, r)
+		case http.MethodPut:
+			servicesH.UpdateSettings(w, r)
+		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
 		}
-		servicesH.UpdateSettings(w, r)
 	}))
 	mux.Handle("/api/", authmw.RequireAuth(validator, protected))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {

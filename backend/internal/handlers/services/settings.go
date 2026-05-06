@@ -76,3 +76,37 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		"settings": updated.Settings,
 	})
 }
+
+func (h *Handler) GetSettings(w http.ResponseWriter, r *http.Request) {
+	claims, ok := authmw.ClaimsFromContext(r.Context())
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid service id")
+		return
+	}
+
+	current, err := h.services.GetByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, postgresrepo.ErrServiceNotFound) {
+			utils.WriteError(w, http.StatusNotFound, "service not found")
+			return
+		}
+		h.log.ErrorCtx(r.Context(), "get service settings failed", "err", err, "service_id", id)
+		utils.WriteError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	if current.OrganizationID != claims.OrganizationID {
+		utils.WriteError(w, http.StatusNotFound, "service not found")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]any{
+		"id":       current.ID.String(),
+		"settings": current.Settings,
+	})
+}

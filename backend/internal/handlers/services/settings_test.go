@@ -126,3 +126,52 @@ func TestHandlerUpdateSettings(t *testing.T) {
 		})
 	}
 }
+
+func TestHandlerGetSettings(t *testing.T) {
+	orgID := uuid.New()
+	otherOrgID := uuid.New()
+	serviceID := uuid.New()
+
+	tests := []struct {
+		name  string
+		setup func(m *mocks.MockServiceReader) *http.Request
+		want  int
+	}{
+		{
+			name: "ok",
+			setup: func(m *mocks.MockServiceReader) *http.Request {
+				m.EXPECT().GetByID(gomock.Any(), serviceID).Return(models.Service{
+					ID: serviceID, OrganizationID: orgID, Settings: map[string]any{"minimum_test_coverage_enabled": true},
+				}, nil)
+				req := httptest.NewRequest(http.MethodGet, "/api/services/"+serviceID.String()+"/settings", nil)
+				req.SetPathValue("id", serviceID.String())
+				return req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: orgID, UserID: uuid.New()}))
+			},
+			want: http.StatusOK,
+		},
+		{
+			name: "other org",
+			setup: func(m *mocks.MockServiceReader) *http.Request {
+				m.EXPECT().GetByID(gomock.Any(), serviceID).Return(models.Service{ID: serviceID, OrganizationID: otherOrgID}, nil)
+				req := httptest.NewRequest(http.MethodGet, "/api/services/"+serviceID.String()+"/settings", nil)
+				req.SetPathValue("id", serviceID.String())
+				return req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: orgID, UserID: uuid.New()}))
+			},
+			want: http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			m := mocks.NewMockServiceReader(ctrl)
+			h := NewHandler(m, logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
+			req := tt.setup(m)
+			rec := httptest.NewRecorder()
+			h.GetSettings(rec, req)
+			if rec.Code != tt.want {
+				t.Fatalf("status=%d want=%d body=%s", rec.Code, tt.want, rec.Body.String())
+			}
+		})
+	}
+}
