@@ -15,6 +15,7 @@ import (
 	"github.com/mams/backend/internal/bootstrap"
 	"github.com/mams/backend/internal/config"
 	authhandler "github.com/mams/backend/internal/handlers/auth"
+	authmw "github.com/mams/backend/internal/middleware/auth"
 	"github.com/mams/backend/internal/migrator"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
 )
@@ -45,6 +46,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("create jwt issuer: %v", err)
 	}
+	validator, err := authmw.NewJWTValidator(cfg.JWTSecret)
+	if err != nil {
+		log.Fatalf("create jwt validator: %v", err)
+	}
 	login := authhandler.NewLoginHandler(users, issuer)
 
 	mux := http.NewServeMux()
@@ -55,6 +60,13 @@ func main() {
 		}
 		login.Post(w, r)
 	})
+	mux.Handle("/api/auth/me", authmw.RequireAuth(validator, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		login.Me(w, r)
+	})))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("ok"))
 	})

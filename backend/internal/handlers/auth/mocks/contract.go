@@ -13,6 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
+	uuid "github.com/google/uuid"
 	models "github.com/mams/backend/internal/models"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -39,6 +40,21 @@ func NewMockUserReader(ctrl *gomock.Controller) *MockUserReader {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockUserReader) EXPECT() *MockUserReaderMockRecorder {
 	return m.recorder
+}
+
+// GetByID mocks base method.
+func (m *MockUserReader) GetByID(ctx context.Context, id uuid.UUID) (models.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByID", ctx, id)
+	ret0, _ := ret[0].(models.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByID indicates an expected call of GetByID.
+func (mr *MockUserReaderMockRecorder) GetByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockUserReader)(nil).GetByID), ctx, id)
 }
 
 // GetByLogin mocks base method.
