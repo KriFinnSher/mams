@@ -2,6 +2,8 @@ package auth
 
 import (
 	"encoding/json"
+	"io"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -75,7 +77,7 @@ func TestRequireAuth(t *testing.T) {
 				gotClaims, claimsOK = ClaimsFromContext(r.Context())
 				w.WriteHeader(http.StatusOK)
 			})
-			h := RequireAuth(validator, next)
+			h := RequireAuth(validator, slog.New(slog.NewTextHandler(io.Discard, nil)), next)
 
 			req := httptest.NewRequest(http.MethodGet, "/api/services", nil)
 			if tt.authHeader != "" {

@@ -31,7 +31,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	list, err := h.services.ListByOrganization(r.Context(), claims.OrganizationID)
 	if err != nil {
-		h.log.Error("list services by organization failed", "err", err, "organization_id", claims.OrganizationID)
+		authmw.LoggerFromContext(r.Context(), h.log).Error("list services by organization failed", "err", err)
 		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}

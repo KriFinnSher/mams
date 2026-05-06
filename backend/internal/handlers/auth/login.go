@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/mams/backend/internal/auth"
+	authmw "github.com/mams/backend/internal/middleware/auth"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
 	"github.com/mams/backend/internal/utils"
 )
@@ -47,7 +48,7 @@ func (h *LoginHandler) Post(w http.ResponseWriter, r *http.Request) {
 			utils.WriteError(w, http.StatusUnauthorized, "invalid credentials")
 			return
 		}
-		h.log.Error("get user by login failed", "err", err, "login", req.Login)
+		authmw.LoggerFromContext(r.Context(), h.log).Error("get user by login failed", "err", err, "login", req.Login)
 		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
@@ -57,14 +58,14 @@ func (h *LoginHandler) Post(w http.ResponseWriter, r *http.Request) {
 			utils.WriteError(w, http.StatusUnauthorized, "invalid credentials")
 			return
 		}
-		h.log.Error("verify password failed", "err", err, "login", req.Login)
+		authmw.LoggerFromContext(r.Context(), h.log).Error("verify password failed", "err", err, "login", req.Login)
 		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
 
 	token, err := h.issuer.IssueToken(user)
 	if err != nil {
-		h.log.Error("issue token failed", "err", err, "user_id", user.ID)
+		authmw.LoggerFromContext(r.Context(), h.log).Error("issue token failed", "err", err)
 		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}

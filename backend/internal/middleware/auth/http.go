@@ -2,13 +2,14 @@ package auth
 
 import (
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 
 	"github.com/mams/backend/internal/utils"
 )
 
-func RequireAuth(validator *JWTValidator, next http.Handler) http.Handler {
+func RequireAuth(validator *JWTValidator, baseLogger *slog.Logger, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		raw := r.Header.Get("Authorization")
 		if raw == "" {
@@ -38,6 +39,12 @@ func RequireAuth(validator *JWTValidator, next http.Handler) http.Handler {
 			return
 		}
 
-		next.ServeHTTP(w, r.WithContext(WithClaims(r.Context(), claims)))
+		l := baseLogger.With(
+			slog.String("user_id", claims.UserID.String()),
+			slog.String("organization_id", claims.OrganizationID.String()),
+		)
+		ctx := WithClaims(r.Context(), claims)
+		ctx = WithLogger(ctx, l)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

@@ -65,14 +65,15 @@ func main() {
 		}
 		login.Post(w, r)
 	})
-	mux.Handle("/api/auth/me", authmw.RequireAuth(validator, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	protected := http.NewServeMux()
+	protected.Handle("/api/auth/me", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 		login.Me(w, r)
-	})))
-	mux.Handle("/api/services", authmw.RequireAuth(validator, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	}))
+	protected.Handle("/api/services", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			servicesH.List(w, r)
@@ -81,14 +82,15 @@ func main() {
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
-	})))
-	mux.Handle("/api/services/{id}", authmw.RequireAuth(validator, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	}))
+	protected.Handle("/api/services/{id}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 		servicesH.Get(w, r)
-	})))
+	}))
+	mux.Handle("/api/", authmw.RequireAuth(validator, logger, protected))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("ok"))
 	})
