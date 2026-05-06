@@ -42,6 +42,21 @@ func (m *MockServiceReader) EXPECT() *MockServiceReaderMockRecorder {
 	return m.recorder
 }
 
+// Create mocks base method.
+func (m *MockServiceReader) Create(ctx context.Context, s models.Service) (models.Service, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, s)
+	ret0, _ := ret[0].(models.Service)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockServiceReaderMockRecorder) Create(ctx, s any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockServiceReader)(nil).Create), ctx, s)
+}
+
 // ListByOrganization mocks base method.
 func (m *MockServiceReader) ListByOrganization(ctx context.Context, orgID uuid.UUID) ([]models.Service, error) {
 	m.ctrl.T.Helper()

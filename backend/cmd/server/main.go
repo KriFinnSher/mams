@@ -71,11 +71,14 @@ func main() {
 		login.Me(w, r)
 	})))
 	mux.Handle("/api/services", authmw.RequireAuth(validator, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
+		switch r.Method {
+		case http.MethodGet:
+			servicesH.List(w, r)
+		case http.MethodPost:
+			servicesH.Create(w, r)
+		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-			return
 		}
-		servicesH.List(w, r)
 	})))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("ok"))
