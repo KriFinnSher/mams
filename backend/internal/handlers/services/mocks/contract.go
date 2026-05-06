@@ -86,3 +86,18 @@ func (mr *MockServiceReaderMockRecorder) ListByOrganization(ctx, orgID any) *gom
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByOrganization", reflect.TypeOf((*MockServiceReader)(nil).ListByOrganization), ctx, orgID)
 }
+
+// UpdateInfo mocks base method.
+func (m *MockServiceReader) UpdateInfo(ctx context.Context, s models.Service) (models.Service, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateInfo", ctx, s)
+	ret0, _ := ret[0].(models.Service)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateInfo indicates an expected call of UpdateInfo.
+func (mr *MockServiceReaderMockRecorder) UpdateInfo(ctx, s any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateInfo", reflect.TypeOf((*MockServiceReader)(nil).UpdateInfo), ctx, s)
+}

@@ -13,4 +13,5 @@ type ServiceReader interface {
 	Create(ctx context.Context, s models.Service) (models.Service, error)
 	GetByID(ctx context.Context, id uuid.UUID) (models.Service, error)
 	ListByOrganization(ctx context.Context, orgID uuid.UUID) ([]models.Service, error)
+	UpdateInfo(ctx context.Context, s models.Service) (models.Service, error)
 }
