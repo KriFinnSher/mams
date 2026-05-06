@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/mams/backend/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -21,6 +22,14 @@ type collection interface {
 	Find(ctx context.Context, filter any, opts ...*options.FindOptions) (cursor, error)
 }
 
+type mongoCollection struct {
+	col *mongo.Collection
+}
+
+func (m mongoCollection) Find(ctx context.Context, filter any, opts ...*options.FindOptions) (cursor, error) {
+	return m.col.Find(ctx, filter, opts...)
+}
+
 type LogsRepository struct {
 	col collection
 }
@@ -29,6 +38,10 @@ var ErrCollectionNotConfigured = errors.New("mongo logs collection is not config
 
 func NewLogsRepository(col collection) *LogsRepository {
 	return &LogsRepository{col: col}
+}
+
+func NewLogsRepositoryCollection(col *mongo.Collection) *LogsRepository {
+	return &LogsRepository{col: mongoCollection{col: col}}
 }
 
 type logDoc struct {

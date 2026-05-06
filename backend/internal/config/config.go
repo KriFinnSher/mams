@@ -15,6 +15,9 @@ type Config struct {
 	HTTPHost  string
 	HTTPPort  string
 	PostgresDSN string
+	MongoURI  string
+	MongoDB   string
+	MongoLogsCollection string
 	JWTSecret string
 	JWTTTL    time.Duration
 }
@@ -44,11 +47,26 @@ func Get() *Config {
 		}
 
 		jwtSecret := os.Getenv("JWT_SECRET")
+		mongoURI := os.Getenv("MONGO_URI")
+		if mongoURI == "" {
+			mongoURI = "mongodb://localhost:27017"
+		}
+		mongoDB := os.Getenv("MONGO_DB")
+		if mongoDB == "" {
+			mongoDB = "mams"
+		}
+		mongoLogsCollection := os.Getenv("MONGO_LOGS_COLLECTION")
+		if mongoLogsCollection == "" {
+			mongoLogsCollection = "logs"
+		}
 
 		cfg = &Config{
 			HTTPHost:  httpHost,
 			HTTPPort:  httpPort,
 			PostgresDSN: postgresDSN,
+			MongoURI: mongoURI,
+			MongoDB: mongoDB,
+			MongoLogsCollection: mongoLogsCollection,
 			JWTSecret: jwtSecret,
 			JWTTTL:    utils.ParseTTLSeconds(os.Getenv("JWT_TTL"), 3600),
 		}

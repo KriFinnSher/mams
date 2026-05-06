@@ -23,6 +23,8 @@ import (
 	"github.com/mams/backend/internal/migrator"
 	mongorepo "github.com/mams/backend/internal/repository/mongo"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func main() {
@@ -36,6 +38,13 @@ func main() {
 		log.Fatalf("connect postgres: %v", err)
 	}
 	defer pool.Close()
+	mongoClient, err := mongo.Connect(context.Background(), options.Client().ApplyURI(cfg.MongoURI))
+	if err != nil {
+		log.Fatalf("connect mongo: %v", err)
+	}
+	defer func() {
+		_ = mongoClient.Disconnect(context.Background())
+	}()
 
 	migrationsDir := migrator.ResolveMigrationsDir()
 	if err := migrator.Up(context.Background(), pool, migrationsDir); err != nil {
@@ -49,7 +58,7 @@ func main() {
 	services := postgresrepo.NewServiceRepositoryPool(pool)
 	access := postgresrepo.NewServiceAccessRepositoryPool(pool)
 	profile := postgresrepo.NewProfileReader(users, services)
-	logsRepo := mongorepo.NewLogsRepository(nil)
+	logsRepo := mongorepo.NewLogsRepositoryCollection(mongoClient.Database(cfg.MongoDB).Collection(cfg.MongoLogsCollection))
 
 	issuer, err := authcore.NewJWTIssuer(cfg.JWTSecret, cfg.JWTTTL)
 	if err != nil {
