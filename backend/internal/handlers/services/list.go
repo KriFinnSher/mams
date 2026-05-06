@@ -1,19 +1,19 @@
 package services
 
 import (
-	"log/slog"
 	"net/http"
 
+	"github.com/mams/backend/internal/logx"
 	authmw "github.com/mams/backend/internal/middleware/auth"
 	"github.com/mams/backend/internal/utils"
 )
 
 type Handler struct {
 	services ServiceReader
-	log      *slog.Logger
+	log      *logx.Logger
 }
 
-func NewHandler(services ServiceReader, log *slog.Logger) *Handler {
+func NewHandler(services ServiceReader, log *logx.Logger) *Handler {
 	return &Handler{services: services, log: log}
 }
 
@@ -31,7 +31,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 	list, err := h.services.ListByOrganization(r.Context(), claims.OrganizationID)
 	if err != nil {
-		authmw.LoggerFromContext(r.Context(), h.log).Error("list services by organization failed", "err", err)
+		h.log.ErrorCtx(r.Context(), "list services by organization failed", "err", err)
 		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}

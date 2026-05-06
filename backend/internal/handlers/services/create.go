@@ -45,7 +45,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		GrafanaDashboardUID:        req.GrafanaDashboardUID,
 	})
 	if err != nil {
-		authmw.LoggerFromContext(r.Context(), h.log).Error("create service failed", "err", err, "name", req.Name)
+		h.log.ErrorCtx(r.Context(), "create service failed", "err", err, "name", req.Name)
 		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}

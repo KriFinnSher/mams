@@ -14,6 +14,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/mams/backend/internal/handlers/auth/mocks"
+	"github.com/mams/backend/internal/logx"
 	"github.com/mams/backend/internal/models"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
 )
@@ -114,7 +115,7 @@ func TestLoginHandlerPost(t *testing.T) {
 
 			req := httptest.NewRequest(http.MethodPost, "/api/auth/login", bytes.NewReader(body))
 			rec := httptest.NewRecorder()
-			h := NewLoginHandler(users, issuer, slog.New(slog.NewTextHandler(io.Discard, nil)))
+			h := NewLoginHandler(users, issuer, logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
 
 			h.Post(rec, req)
 

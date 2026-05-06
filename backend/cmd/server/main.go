@@ -17,6 +17,7 @@ import (
 	"github.com/mams/backend/internal/config"
 	authhandler "github.com/mams/backend/internal/handlers/auth"
 	serviceshandler "github.com/mams/backend/internal/handlers/services"
+	"github.com/mams/backend/internal/logx"
 	authmw "github.com/mams/backend/internal/middleware/auth"
 	"github.com/mams/backend/internal/migrator"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
@@ -53,7 +54,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("create jwt validator: %v", err)
 	}
-	logger := slog.Default()
+	logger := logx.New(slog.Default())
 	login := authhandler.NewLoginHandler(users, issuer, logger)
 	servicesH := serviceshandler.NewHandler(services, logger)
 
@@ -90,7 +91,7 @@ func main() {
 		}
 		servicesH.Get(w, r)
 	}))
-	mux.Handle("/api/", authmw.RequireAuth(validator, logger, protected))
+	mux.Handle("/api/", authmw.RequireAuth(validator, protected))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("ok"))
 	})

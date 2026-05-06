@@ -28,7 +28,7 @@ func (h *LoginHandler) Me(w http.ResponseWriter, r *http.Request) {
 			utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
 			return
 		}
-		authmw.LoggerFromContext(r.Context(), h.log).Error("get user by id failed", "err", err)
+		h.log.ErrorCtx(r.Context(), "get user by id failed", "err", err)
 		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}

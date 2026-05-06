@@ -14,6 +14,7 @@ import (
 	"github.com/mams/backend/internal/models"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
 	"github.com/mams/backend/internal/handlers/auth/mocks"
+	"github.com/mams/backend/internal/logx"
 	"go.uber.org/mock/gomock"
 )
 
@@ -89,7 +90,7 @@ func TestLoginHandler_Me(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			users := mocks.NewMockUserReader(ctrl)
-			h := NewLoginHandler(users, nil, slog.New(slog.NewTextHandler(io.Discard, nil)))
+			h := NewLoginHandler(users, nil, logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
 			req := tc.setup(users)
 			rec := httptest.NewRecorder()
 
