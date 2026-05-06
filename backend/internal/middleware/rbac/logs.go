@@ -1,75 +1,13 @@
 package rbac
 
 import (
-	"context"
 	"errors"
 	"net/http"
-
-	"github.com/google/uuid"
-	authmw "github.com/mams/backend/internal/middleware/auth"
-	"github.com/mams/backend/internal/utils"
 	rbaccore "github.com/mams/backend/internal/rbac"
 )
 
 var ErrAccessNotFound = errors.New("service access not found")
 
-type serviceReader interface {
-	GetByID(ctx context.Context, id uuid.UUID) (serviceView, error)
-}
-
-type accessReader interface {
-	GetByServiceAndUser(ctx context.Context, serviceID, userID uuid.UUID) (accessView, error)
-}
-
-type serviceView struct {
-	OrganizationID uuid.UUID
-	OwnerUserID    uuid.UUID
-}
-
-type accessView struct {
-	Role string
-}
-
 func RequireLogsAccess(services serviceReader, access accessReader, next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		claims, ok := authmw.ClaimsFromContext(r.Context())
-		if !ok {
-			utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
-			return
-		}
-
-		serviceID, err := uuid.Parse(r.PathValue("id"))
-		if err != nil {
-			utils.WriteError(w, http.StatusBadRequest, "invalid service id")
-			return
-		}
-
-		svc, err := services.GetByID(r.Context(), serviceID)
-		if err != nil {
-			utils.WriteError(w, http.StatusNotFound, "service not found")
-			return
-		}
-		if svc.OrganizationID != claims.OrganizationID {
-			utils.WriteError(w, http.StatusNotFound, "service not found")
-			return
-		}
-
-		role := rbaccore.RoleObserver
-		a, err := access.GetByServiceAndUser(r.Context(), serviceID, claims.UserID)
-		if err == nil {
-			role = rbaccore.EffectiveRole(svc.OwnerUserID, claims.UserID, a.Role)
-		} else if errors.Is(err, ErrAccessNotFound) {
-			role = rbaccore.EffectiveRole(svc.OwnerUserID, claims.UserID, "")
-		} else {
-			utils.WriteError(w, http.StatusInternalServerError, "internal error")
-			return
-		}
-
-		if role == rbaccore.RoleObserver {
-			utils.WriteError(w, http.StatusForbidden, "forbidden")
-			return
-		}
-
-		next.ServeHTTP(w, r)
-	})
+	return RequireAtLeastRole(rbaccore.RoleDeveloper, services, access, next)
 }
