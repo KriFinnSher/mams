@@ -48,7 +48,7 @@ func TestHandlerCreate(t *testing.T) {
 		wantID     string
 	}{
 		{
-			name: "success",
+			name: "success and creator becomes owner",
 			body: validReq,
 			setup: func(m *mocks.MockServiceReader) *http.Request {
 				m.EXPECT().Create(gomock.Any(), gomock.AssignableToTypeOf(models.Service{})).DoAndReturn(
