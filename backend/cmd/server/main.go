@@ -19,7 +19,9 @@ import (
 	serviceshandler "github.com/mams/backend/internal/handlers/services"
 	"github.com/mams/backend/internal/logx"
 	authmw "github.com/mams/backend/internal/middleware/auth"
+	rbacmw "github.com/mams/backend/internal/middleware/rbac"
 	"github.com/mams/backend/internal/migrator"
+	mongorepo "github.com/mams/backend/internal/repository/mongo"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
 )
 
@@ -45,7 +47,9 @@ func main() {
 
 	users := postgresrepo.NewUserRepository(pool)
 	services := postgresrepo.NewServiceRepositoryPool(pool)
+	access := postgresrepo.NewServiceAccessRepositoryPool(pool)
 	profile := postgresrepo.NewProfileReader(users, services)
+	logsRepo := mongorepo.NewLogsRepository(nil)
 
 	issuer, err := authcore.NewJWTIssuer(cfg.JWTSecret, cfg.JWTTTL)
 	if err != nil {
@@ -57,7 +61,7 @@ func main() {
 	}
 	logger := logx.New(slog.Default())
 	login := authhandler.NewLoginHandler(profile, issuer, logger)
-	servicesH := serviceshandler.NewHandler(services, logger)
+	servicesH := serviceshandler.NewHandler(services, logsRepo, logger)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/login", func(w http.ResponseWriter, r *http.Request) {
@@ -105,6 +109,13 @@ func main() {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
 	}))
+	protected.Handle("/api/services/{id}/logs", rbacmw.RequireLogsAccess(services, access, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		servicesH.GetLogs(w, r)
+	})))
 	mux.Handle("/api/", authmw.RequireAuth(validator, protected))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("ok"))

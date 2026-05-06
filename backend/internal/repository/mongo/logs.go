@@ -2,6 +2,7 @@ package mongo
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
 	"github.com/mams/backend/internal/models"
@@ -23,6 +24,8 @@ type collection interface {
 type LogsRepository struct {
 	col collection
 }
+
+var ErrCollectionNotConfigured = errors.New("mongo logs collection is not configured")
 
 func NewLogsRepository(col collection) *LogsRepository {
 	return &LogsRepository{col: col}
@@ -50,6 +53,9 @@ type logDoc struct {
 }
 
 func (r *LogsRepository) ListByService(ctx context.Context, serviceID uuid.UUID, filter models.LogFilter) ([]models.LogEntry, error) {
+	if r.col == nil {
+		return nil, ErrCollectionNotConfigured
+	}
 	q := bson.M{"service_id": serviceID.String()}
 	if filter.Level != "" {
 		q["level"] = filter.Level

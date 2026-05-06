@@ -9,23 +9,24 @@ import (
 
 	"github.com/google/uuid"
 	authmw "github.com/mams/backend/internal/middleware/auth"
+	"github.com/mams/backend/internal/models"
 )
 
 type testServiceReader struct {
-	svc serviceView
+	svc models.Service
 	err error
 }
 
-func (t testServiceReader) GetByID(context.Context, uuid.UUID) (serviceView, error) {
+func (t testServiceReader) GetByID(context.Context, uuid.UUID) (models.Service, error) {
 	return t.svc, t.err
 }
 
 type testAccessReader struct {
-	acc accessView
+	acc models.ServiceAccess
 	err error
 }
 
-func (t testAccessReader) GetByServiceAndUser(context.Context, uuid.UUID, uuid.UUID) (accessView, error) {
+func (t testAccessReader) GetByServiceAndUser(context.Context, uuid.UUID, uuid.UUID) (models.ServiceAccess, error) {
 	return t.acc, t.err
 }
 
@@ -53,7 +54,7 @@ func TestRequireLogsAccess(t *testing.T) {
 				UserID:         userID,
 				OrganizationID: orgID,
 			},
-			services: testServiceReader{svc: serviceView{OrganizationID: orgID, OwnerUserID: userID}},
+			services: testServiceReader{svc: models.Service{OrganizationID: orgID, OwnerUserID: userID}},
 			access:   testAccessReader{err: ErrAccessNotFound},
 			wantStatus: http.StatusNoContent,
 		},
@@ -63,8 +64,8 @@ func TestRequireLogsAccess(t *testing.T) {
 				UserID:         userID,
 				OrganizationID: orgID,
 			},
-			services: testServiceReader{svc: serviceView{OrganizationID: orgID, OwnerUserID: uuid.New()}},
-			access:   testAccessReader{acc: accessView{Role: "developer"}},
+			services: testServiceReader{svc: models.Service{OrganizationID: orgID, OwnerUserID: uuid.New()}},
+			access:   testAccessReader{acc: models.ServiceAccess{Role: "developer"}},
 			wantStatus: http.StatusNoContent,
 		},
 		{
@@ -73,7 +74,7 @@ func TestRequireLogsAccess(t *testing.T) {
 				UserID:         userID,
 				OrganizationID: orgID,
 			},
-			services: testServiceReader{svc: serviceView{OrganizationID: orgID, OwnerUserID: uuid.New()}},
+			services: testServiceReader{svc: models.Service{OrganizationID: orgID, OwnerUserID: uuid.New()}},
 			access:   testAccessReader{err: ErrAccessNotFound},
 			wantStatus: http.StatusForbidden,
 		},
@@ -83,7 +84,7 @@ func TestRequireLogsAccess(t *testing.T) {
 				UserID:         userID,
 				OrganizationID: orgID,
 			},
-			services: testServiceReader{svc: serviceView{OrganizationID: orgID, OwnerUserID: uuid.New()}},
+			services: testServiceReader{svc: models.Service{OrganizationID: orgID, OwnerUserID: uuid.New()}},
 			access:   testAccessReader{err: errors.New("db")},
 			wantStatus: http.StatusInternalServerError,
 		},

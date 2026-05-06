@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/mams/backend/internal/models"
 )
@@ -18,6 +19,10 @@ type ServiceAccessRepository struct {
 
 func NewServiceAccessRepository(q serviceQueryer) *ServiceAccessRepository {
 	return &ServiceAccessRepository{q: q}
+}
+
+func NewServiceAccessRepositoryPool(pool *pgxpool.Pool) *ServiceAccessRepository {
+	return NewServiceAccessRepository(servicePoolAdapter{pool: pool})
 }
 
 func (r *ServiceAccessRepository) GrantDeveloper(ctx context.Context, serviceID, userID uuid.UUID) (models.ServiceAccess, error) {

@@ -10,11 +10,12 @@ import (
 
 type Handler struct {
 	services ServiceReader
+	logs     LogReader
 	log      *logx.Logger
 }
 
-func NewHandler(services ServiceReader, log *logx.Logger) *Handler {
-	return &Handler{services: services, log: log}
+func NewHandler(services ServiceReader, logs LogReader, log *logx.Logger) *Handler {
+	return &Handler{services: services, logs: logs, log: log}
 }
 
 type serviceItem struct {

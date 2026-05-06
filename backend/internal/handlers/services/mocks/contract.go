@@ -116,3 +116,42 @@ func (mr *MockServiceReaderMockRecorder) UpdateSettings(ctx, id, settings any) *
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateSettings", reflect.TypeOf((*MockServiceReader)(nil).UpdateSettings), ctx, id, settings)
 }
+
+// MockLogReader is a mock of LogReader interface.
+type MockLogReader struct {
+	ctrl     *gomock.Controller
+	recorder *MockLogReaderMockRecorder
+	isgomock struct{}
+}
+
+// MockLogReaderMockRecorder is the mock recorder for MockLogReader.
+type MockLogReaderMockRecorder struct {
+	mock *MockLogReader
+}
+
+// NewMockLogReader creates a new mock instance.
+func NewMockLogReader(ctrl *gomock.Controller) *MockLogReader {
+	mock := &MockLogReader{ctrl: ctrl}
+	mock.recorder = &MockLogReaderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockLogReader) EXPECT() *MockLogReaderMockRecorder {
+	return m.recorder
+}
+
+// ListByService mocks base method.
+func (m *MockLogReader) ListByService(ctx context.Context, serviceID uuid.UUID, filter models.LogFilter) ([]models.LogEntry, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByService", ctx, serviceID, filter)
+	ret0, _ := ret[0].([]models.LogEntry)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListByService indicates an expected call of ListByService.
+func (mr *MockLogReaderMockRecorder) ListByService(ctx, serviceID, filter any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByService", reflect.TypeOf((*MockLogReader)(nil).ListByService), ctx, serviceID, filter)
+}

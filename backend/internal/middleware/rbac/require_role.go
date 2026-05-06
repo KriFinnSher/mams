@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	authmw "github.com/mams/backend/internal/middleware/auth"
+	"github.com/mams/backend/internal/models"
 	rbaccore "github.com/mams/backend/internal/rbac"
 	"github.com/mams/backend/internal/utils"
 )
@@ -69,18 +70,9 @@ func roleWeight(role string) int {
 }
 
 type serviceReader interface {
-	GetByID(ctx context.Context, id uuid.UUID) (serviceView, error)
+	GetByID(ctx context.Context, id uuid.UUID) (models.Service, error)
 }
 
 type accessReader interface {
-	GetByServiceAndUser(ctx context.Context, serviceID, userID uuid.UUID) (accessView, error)
-}
-
-type serviceView struct {
-	OrganizationID uuid.UUID
-	OwnerUserID    uuid.UUID
-}
-
-type accessView struct {
-	Role string
+	GetByServiceAndUser(ctx context.Context, serviceID, userID uuid.UUID) (models.ServiceAccess, error)
 }

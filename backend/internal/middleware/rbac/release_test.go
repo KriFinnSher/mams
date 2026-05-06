@@ -7,6 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	authmw "github.com/mams/backend/internal/middleware/auth"
+	"github.com/mams/backend/internal/models"
 )
 
 func TestRequireReleaseManageAccess(t *testing.T) {
@@ -19,7 +20,7 @@ func TestRequireReleaseManageAccess(t *testing.T) {
 	})
 
 	h := RequireReleaseManageAccess(
-		testServiceReader{svc: serviceView{OrganizationID: orgID, OwnerUserID: userID}},
+		testServiceReader{svc: models.Service{OrganizationID: orgID, OwnerUserID: userID}},
 		testAccessReader{err: ErrAccessNotFound},
 		next,
 	)
@@ -38,4 +39,3 @@ func TestRequireReleaseManageAccess(t *testing.T) {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusNoContent)
 	}
 }
-
