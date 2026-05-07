@@ -17,6 +17,10 @@ import (
 	"github.com/mams/backend/internal/config"
 	"github.com/mams/backend/internal/githubclient"
 	authhandler "github.com/mams/backend/internal/handlers/auth"
+	contractshandler "github.com/mams/backend/internal/handlers/contracts"
+	logshandler "github.com/mams/backend/internal/handlers/logs"
+	metricshandler "github.com/mams/backend/internal/handlers/metrics"
+	releaseshandler "github.com/mams/backend/internal/handlers/releases"
 	serviceshandler "github.com/mams/backend/internal/handlers/services"
 	"github.com/mams/backend/internal/logx"
 	authmw "github.com/mams/backend/internal/middleware/auth"
@@ -76,6 +80,10 @@ func main() {
 	hub := ws.NewHub()
 	login := authhandler.NewLoginHandler(profile, issuer, logger)
 	servicesH := serviceshandler.NewHandler(services, logsRepo, ghClient, releasesRepo, hub, logger)
+	logsH := logshandler.NewHandler(logsRepo, hub, logger)
+	metricsH := metricshandler.NewHandler(services, cfg.GrafanaURL)
+	contractsH := contractshandler.NewHandler(services, ghClient)
+	releasesH := releaseshandler.NewHandler(services, releasesRepo)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/login", func(w http.ResponseWriter, r *http.Request) {
@@ -128,35 +136,35 @@ func main() {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		servicesH.GetLogs(w, r)
+		logsH.Get(w, r)
 	})))
 	protected.Handle("/api/services/{id}/logs/stream", rbacmw.RequireLogsAccess(services, access, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		servicesH.StreamLogs(w, r)
+		logsH.Stream(w, r)
 	})))
 	protected.Handle("/api/services/{id}/metrics", rbacmw.RequireMetricsAccess(services, access, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		servicesH.GetMetrics(w, r)
+		metricsH.Get(w, r)
 	})))
 	protected.Handle("/api/services/{id}/contracts", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		servicesH.GetContracts(w, r)
+		contractsH.Get(w, r)
 	}))
 	protected.Handle("/api/services/{id}/releases", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		servicesH.GetReleases(w, r)
+		releasesH.Get(w, r)
 	}))
 	mux.Handle("/api/", authmw.RequireAuth(validator, protected))
 
@@ -165,7 +173,7 @@ func main() {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		servicesH.IngestLogs(w, r)
+		logsH.Ingest(w, r)
 	})
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("ok"))
