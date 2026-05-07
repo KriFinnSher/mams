@@ -18,6 +18,14 @@ export function ServicePage() {
   const [logFrom, setLogFrom] = useState("");
   const [logTo, setLogTo] = useState("");
   const [logsCursor, setLogsCursor] = useState("");
+  const [releaseStrategy, setReleaseStrategy] = useState("rolling");
+  const [releaseEnv, setReleaseEnv] = useState("dev");
+  const [releaseBranch, setReleaseBranch] = useState("main");
+  const [releaseTag, setReleaseTag] = useState("");
+  const [releaseDescription, setReleaseDescription] = useState("");
+  const [releaseMode, setReleaseMode] = useState("deploy");
+  const [rollbackTag, setRollbackTag] = useState("");
+  const [releaseStatus, setReleaseStatus] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -219,10 +227,89 @@ export function ServicePage() {
             <section className="profile-card">
               <h2>Релиз</h2>
               <form className="inline-form">
-                <label>Стратегия<select defaultValue="rolling"><option value="rolling">rolling</option><option value="recreate">recreate</option><option value="canary">canary</option></select></label>
-                <label>Окружение<select defaultValue="dev"><option value="dev">dev</option><option value="staging">staging</option><option value="prod">prod</option></select></label>
-                <label>Ветка<input type="text" defaultValue={svc?.default_branch || "main"} /></label>
-                <button type="button">Запустить деплой</button>
+                <label>
+                  Стратегия
+                  <select value={releaseStrategy} onChange={(e) => setReleaseStrategy(e.target.value)} disabled={releaseMode === "rollback"}>
+                    <option value="rolling">rolling</option>
+                    <option value="recreate">recreate</option>
+                    <option value="canary">canary</option>
+                  </select>
+                </label>
+                <label>
+                  Окружение
+                  <select value={releaseEnv} onChange={(e) => setReleaseEnv(e.target.value)} disabled={releaseMode === "rollback"}>
+                    <option value="dev">dev</option>
+                    <option value="staging">staging</option>
+                    <option value="prod">prod</option>
+                  </select>
+                </label>
+                {releaseMode === "deploy" && releaseEnv !== "prod" && (
+                  <label>
+                    Ветка
+                    <input type="text" value={releaseBranch} onChange={(e) => setReleaseBranch(e.target.value)} />
+                  </label>
+                )}
+                {releaseMode === "deploy" && releaseEnv === "prod" && (
+                  <label>
+                    Git tag
+                    <input type="text" value={releaseTag} onChange={(e) => setReleaseTag(e.target.value)} placeholder="v1.2.3" />
+                  </label>
+                )}
+                {releaseMode === "rollback" && (
+                  <label>
+                    Версия для rollback
+                    <select value={rollbackTag} onChange={(e) => setRollbackTag(e.target.value)}>
+                      <option value="">Выберите git tag</option>
+                      <option value="v1.2.4">v1.2.4</option>
+                      <option value="v1.2.3">v1.2.3</option>
+                      <option value="v1.2.2">v1.2.2</option>
+                    </select>
+                  </label>
+                )}
+                <label>
+                  Описание
+                  <input type="text" value={releaseDescription} onChange={(e) => setReleaseDescription(e.target.value)} disabled={releaseMode === "rollback"} />
+                </label>
+                <div className="inline-actions">
+                  <button type="button" className={releaseMode === "deploy" ? "mode-btn active" : "mode-btn"} onClick={() => setReleaseMode("deploy")}>Deploy</button>
+                  <button type="button" className={releaseMode === "rollback" ? "mode-btn active" : "mode-btn"} onClick={() => setReleaseMode("rollback")}>Rollback</button>
+                </div>
+                <button type="button" onClick={async () => {
+                  const token = localStorage.getItem("mams_token");
+                  if (!token) return setReleaseStatus("Ошибка авторизации.");
+                  try {
+                    if (releaseMode === "rollback") {
+                      if (!rollbackTag) return setReleaseStatus("Выберите версию для rollback.");
+                      const resp = await fetch(`/api/services/${id}/rollback`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ git_tag: rollbackTag }),
+                      });
+                      if (!resp.ok) return setReleaseStatus("Не удалось выполнить rollback.");
+                      return setReleaseStatus("Rollback запущен.");
+                    }
+
+                    const payload = {
+                      strategy: releaseStrategy,
+                      environment: releaseEnv,
+                      branch: releaseEnv === "prod" ? "" : releaseBranch,
+                      git_tag: releaseEnv === "prod" ? releaseTag : "",
+                      description: releaseDescription,
+                    };
+                    const resp = await fetch(`/api/services/${id}/deploy`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                      body: JSON.stringify(payload),
+                    });
+                    if (!resp.ok) return setReleaseStatus("Не удалось запустить деплой.");
+                    return setReleaseStatus("Деплой запущен.");
+                  } catch {
+                    setReleaseStatus("Операция недоступна.");
+                  }
+                }}>
+                  {releaseMode === "rollback" ? "Запустить rollback" : "Запустить деплой"}
+                </button>
+                <p className="status">{releaseStatus}</p>
               </form>
             </section>
             <section className="profile-card">
