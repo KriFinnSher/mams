@@ -34,6 +34,12 @@ export function ServicePage() {
     Number(svc?.test_coverage) < Number(svc?.minimum_test_coverage),
   );
   const releaseBlockedHint = `Релиз заблокирован: текущее покрытие (${svc?.test_coverage}%) ниже минимального порога (${svc?.minimum_test_coverage}%).`;
+  const isObserver = String(effectiveRole).toLowerCase() === "observer";
+  const isOwner = String(effectiveRole).toLowerCase() === "service_owner";
+  const isDeveloper = String(effectiveRole).toLowerCase() === "developer";
+  const [settingsEnabled, setSettingsEnabled] = useState(false);
+  const [settingsMinCoverage, setSettingsMinCoverage] = useState(0);
+  const [settingsStatus, setSettingsStatus] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -46,6 +52,8 @@ export function ServicePage() {
         const data = await response.json();
         if (cancelled) return;
         setSvc(data);
+        setSettingsEnabled(Boolean(data.minimum_test_coverage_enabled));
+        setSettingsMinCoverage(Number(data.minimum_test_coverage || 0));
         setStatus("");
 
         const meResp = await fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } });
@@ -273,10 +281,10 @@ export function ServicePage() {
           <div className="overview-col">
             <section className="profile-card">
               <h2>Релиз</h2>
-              {String(effectiveRole).toLowerCase() === "observer" && (
+              {isObserver && (
                 <p className="status">У вас нет прав на управление релизами.</p>
               )}
-              {String(effectiveRole).toLowerCase() !== "observer" && (
+              {!isObserver && (
               <form className="inline-form">
                 <label>
                   Стратегия
@@ -373,9 +381,9 @@ export function ServicePage() {
             </section>
             <section className="profile-card">
               <h2>Модули</h2>
-              <p className="status">Роль: {effectiveRole}</p>
+              <p className="status">Роль: <span className="role-badge">{effectiveRole}</span></p>
               <div className="module-tabs">
-                {String(effectiveRole).toLowerCase() !== "observer" && (
+                {!isObserver && (
                   <>
                     <button type="button" className={moduleTab === "metrics" ? "module-tab active" : "module-tab"} onClick={() => setModuleTab("metrics")}>Метрики</button>
                     <button type="button" className={moduleTab === "logs" ? "module-tab active" : "module-tab"} onClick={() => setModuleTab("logs")}>Логи</button>
@@ -385,8 +393,8 @@ export function ServicePage() {
               </div>
               <div className="modules-grid">
                 {moduleTab === "contracts" && <article className="module-card"><p className="status">Просмотр контрактов сервиса.</p></article>}
-                {moduleTab === "metrics" && String(effectiveRole).toLowerCase() !== "observer" && <article className="module-card"><p className="status">Метрики из Grafana.</p></article>}
-                {moduleTab === "logs" && String(effectiveRole).toLowerCase() !== "observer" && (
+                {moduleTab === "metrics" && !isObserver && <article className="module-card"><p className="status">Метрики из Grafana.</p></article>}
+                {moduleTab === "logs" && !isObserver && (
                   <article className="module-card">
                     <div className="logs-filters">
                       <select value={logLevel} onChange={(e) => setLogLevel(e.target.value)}>
@@ -453,7 +461,59 @@ export function ServicePage() {
       {tab === "settings" && (
         <section className="profile-card">
           <h2>Настройки</h2>
-          <p className="status">Настройки будут добавлены в следующих задачах.</p>
+          {isObserver ? (
+            <p className="status">Вкладка недоступна для роли observer.</p>
+          ) : (
+            <form className="inline-form" onSubmit={async (event) => {
+              event.preventDefault();
+              if (!isOwner) return setSettingsStatus("Изменение owner-only настроек доступно только Service Owner.");
+              const token = localStorage.getItem("mams_token");
+              if (!token) return setSettingsStatus("Ошибка авторизации.");
+              try {
+                const payload = {
+                  settings: {
+                    minimum_test_coverage_enabled: settingsEnabled,
+                    minimum_test_coverage: Number(settingsMinCoverage),
+                  },
+                };
+                const resp = await fetch(`/api/services/${id}/settings`, {
+                  method: "PUT",
+                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                  body: JSON.stringify(payload),
+                });
+                if (!resp.ok) return setSettingsStatus("Не удалось сохранить настройки.");
+                setSettingsStatus("Настройки сохранены.");
+              } catch {
+                setSettingsStatus("Не удалось сохранить настройки.");
+              }
+            }}>
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={settingsEnabled}
+                  disabled={isDeveloper}
+                  onChange={(e) => setSettingsEnabled(e.target.checked)}
+                />
+                Задать минимальный порог покрытия
+              </label>
+              <label>
+                Минимальный порог покрытия (%)
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={settingsMinCoverage}
+                  disabled={!settingsEnabled || isDeveloper}
+                  onChange={(e) => setSettingsMinCoverage(Number(e.target.value || 0))}
+                />
+              </label>
+              {isDeveloper && (
+                <p className="status">Режим только чтение: owner-only настройки может менять только Service Owner.</p>
+              )}
+              <button type="submit" disabled={isDeveloper}>Сохранить настройки</button>
+              <p className="status">{settingsStatus}</p>
+            </form>
+          )}
         </section>
       )}
     </main>
