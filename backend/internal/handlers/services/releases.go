@@ -38,10 +38,6 @@ func (h *Handler) GetReleases(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.releases == nil {
-		utils.WriteError(w, http.StatusInternalServerError, "releases reader is not configured")
-		return
-	}
 	list, err := h.releases.ListByService(r.Context(), id)
 	if err != nil {
 		h.log.ErrorCtx(r.Context(), "list releases failed", "err", err, "service_id", id)
@@ -67,4 +63,3 @@ func (h *Handler) GetReleases(w http.ResponseWriter, r *http.Request) {
 
 	utils.WriteJSON(w, http.StatusOK, map[string]any{"releases": resp})
 }
-
