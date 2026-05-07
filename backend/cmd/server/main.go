@@ -134,6 +134,13 @@ func main() {
 		}
 		servicesH.StreamLogs(w, r)
 	})))
+	protected.Handle("/api/services/{id}/metrics", rbacmw.RequireMetricsAccess(services, access, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		servicesH.GetMetrics(w, r)
+	})))
 	mux.Handle("/api/", authmw.RequireAuth(validator, protected))
 
 	mux.HandleFunc("/api/internal/services/{id}/logs", func(w http.ResponseWriter, r *http.Request) {
