@@ -56,6 +56,10 @@ export function ServicePage() {
             setContractsStatus("Файл project.proto не найден.");
             return;
           }
+          if (resp.status === 400 || resp.status === 422) {
+            setContractsStatus("Файл project.proto содержит невалидный формат.");
+            return;
+          }
           setContractsStatus("Не удалось загрузить контракты.");
           return;
         }
