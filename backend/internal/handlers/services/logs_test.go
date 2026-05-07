@@ -19,7 +19,7 @@ func TestHandlerGetLogs(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	sr := mocks.NewMockServiceReader(ctrl)
 	lr := mocks.NewMockLogReader(ctrl)
-	h := NewHandler(sr, lr, ws.NewHub(), logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
+h := NewHandler(sr, lr, nil, ws.NewHub(), logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
 	sid := uuid.New()
 	lr.EXPECT().ListByService(gomock.Any(), sid, gomock.Any()).Return([]models.LogEntry{{ID: "1"}}, nil)
 
@@ -31,4 +31,3 @@ func TestHandlerGetLogs(t *testing.T) {
 		t.Fatalf("status=%d", rec.Code)
 	}
 }
-

@@ -13,13 +13,14 @@ import (
 type Handler struct {
 	services ServiceReader
 	logs     LogReader
+	proto    ProtoReader
 	wsHub    *ws.Hub
 	log      *logx.Logger
 	cfg      *config.Config
 }
 
-func NewHandler(services ServiceReader, logs LogReader, wsHub *ws.Hub, log *logx.Logger) *Handler {
-	return &Handler{services: services, logs: logs, wsHub: wsHub, log: log, cfg: config.Get()}
+func NewHandler(services ServiceReader, logs LogReader, proto ProtoReader, wsHub *ws.Hub, log *logx.Logger) *Handler {
+	return &Handler{services: services, logs: logs, proto: proto, wsHub: wsHub, log: log, cfg: config.Get()}
 }
 
 type serviceItem struct {

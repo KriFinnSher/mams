@@ -15,6 +15,7 @@ import (
 	authcore "github.com/mams/backend/internal/auth"
 	"github.com/mams/backend/internal/bootstrap"
 	"github.com/mams/backend/internal/config"
+	"github.com/mams/backend/internal/githubclient"
 	authhandler "github.com/mams/backend/internal/handlers/auth"
 	serviceshandler "github.com/mams/backend/internal/handlers/services"
 	"github.com/mams/backend/internal/logx"
@@ -60,6 +61,7 @@ func main() {
 	access := postgresrepo.NewServiceAccessRepositoryPool(pool)
 	profile := postgresrepo.NewProfileReader(users, services)
 	logsRepo := mongorepo.NewLogsRepositoryCollection(mongoClient.Database(cfg.MongoDB).Collection(cfg.MongoLogsCollection))
+	ghClient := githubclient.New(http.DefaultClient, cfg.GitHubToken)
 
 	issuer, err := authcore.NewJWTIssuer(cfg.JWTSecret, cfg.JWTTTL)
 	if err != nil {
@@ -72,7 +74,7 @@ func main() {
 	logger := logx.New(slog.Default())
 	hub := ws.NewHub()
 	login := authhandler.NewLoginHandler(profile, issuer, logger)
-	servicesH := serviceshandler.NewHandler(services, logsRepo, hub, logger)
+	servicesH := serviceshandler.NewHandler(services, logsRepo, ghClient, hub, logger)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/login", func(w http.ResponseWriter, r *http.Request) {
@@ -141,6 +143,13 @@ func main() {
 		}
 		servicesH.GetMetrics(w, r)
 	})))
+	protected.Handle("/api/services/{id}/contracts", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		servicesH.GetContracts(w, r)
+	}))
 	mux.Handle("/api/", authmw.RequireAuth(validator, protected))
 
 	mux.HandleFunc("/api/internal/services/{id}/logs", func(w http.ResponseWriter, r *http.Request) {

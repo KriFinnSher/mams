@@ -19,6 +19,7 @@ type Config struct {
 	MongoDB   string
 	MongoLogsCollection string
 	GrafanaURL string
+	GitHubToken string
 	JWTSecret string
 	JWTTTL    time.Duration
 }
@@ -64,6 +65,7 @@ func Get() *Config {
 		if grafanaURL == "" {
 			grafanaURL = "http://localhost:3001"
 		}
+		gitHubToken := os.Getenv("GITHUB_TOKEN")
 
 		cfg = &Config{
 			HTTPHost:  httpHost,
@@ -73,6 +75,7 @@ func Get() *Config {
 			MongoDB: mongoDB,
 			MongoLogsCollection: mongoLogsCollection,
 			GrafanaURL: grafanaURL,
+			GitHubToken: gitHubToken,
 			JWTSecret: jwtSecret,
 			JWTTTL:    utils.ParseTTLSeconds(os.Getenv("JWT_TTL"), 3600),
 		}
