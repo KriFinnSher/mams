@@ -348,6 +348,13 @@ function ProfilePage() {
           <p>Организация: {profile.organization_id}</p>
         </section>
       )}
+      <section className="profile-card">
+        <h2>Роли в сервисах</h2>
+        <p>
+          Здесь отображаются только сервисы, где ваша роль отличается от наблюдателя
+          (`observer`).
+        </p>
+      </section>
     </main>
   );
 }
