@@ -164,7 +164,18 @@ function ServiceListCard({ service }) {
 }
 
 function NewServicePage() {
-  return <Layout title="Создание сервиса" />;
+  return (
+    <main className="page">
+      <h1>Добавление сервиса</h1>
+      <p className="subtitle">Создайте новый сервис в текущей организации.</p>
+      <nav className="nav">
+        <Link to="/login">Логин</Link>
+        <Link to="/services">Сервисы</Link>
+        <Link to="/services/new">Новый сервис</Link>
+        <Link to="/profile">Профиль</Link>
+      </nav>
+    </main>
+  );
 }
 
 function ProfilePage() {
