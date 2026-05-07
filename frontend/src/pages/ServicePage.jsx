@@ -11,6 +11,12 @@ export function ServicePage() {
   const [saveStatus, setSaveStatus] = useState("");
   const [isEditingInfo, setIsEditingInfo] = useState(false);
   const [moduleTab, setModuleTab] = useState("metrics");
+  const [logs, setLogs] = useState([]);
+  const [logsStatus, setLogsStatus] = useState("");
+  const [logLevel, setLogLevel] = useState("");
+  const [logText, setLogText] = useState("");
+  const [logFrom, setLogFrom] = useState("");
+  const [logTo, setLogTo] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -38,6 +44,37 @@ export function ServicePage() {
     load();
     return () => { cancelled = true; };
   }, [id]);
+
+  useEffect(() => {
+    if (moduleTab !== "logs") return;
+    let cancelled = false;
+    async function loadLogs() {
+      const token = localStorage.getItem("mams_token");
+      if (!token) return setLogsStatus("Ошибка авторизации.");
+      setLogsStatus("Загрузка логов...");
+      try {
+        const params = new URLSearchParams();
+        if (logLevel) params.set("level", logLevel);
+        if (logText) params.set("text", logText);
+        if (logFrom) params.set("time_from", new Date(logFrom).toISOString());
+        if (logTo) params.set("time_to", new Date(logTo).toISOString());
+        params.set("limit", "100");
+        const resp = await fetch(`/api/services/${id}/logs?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!resp.ok) return setLogsStatus("Не удалось загрузить логи.");
+        const data = await resp.json();
+        if (cancelled) return;
+        const list = Array.isArray(data?.logs) ? data.logs : Array.isArray(data) ? data : [];
+        setLogs(list);
+        setLogsStatus(list.length === 0 ? "Логи не найдены." : "");
+      } catch {
+        if (!cancelled) setLogsStatus("Не удалось загрузить логи.");
+      }
+    }
+    loadLogs();
+    return () => { cancelled = true; };
+  }, [id, moduleTab, logLevel, logText, logFrom, logTo]);
 
   return (
     <main className="page">
@@ -183,7 +220,34 @@ export function ServicePage() {
               <div className="modules-grid">
                 {moduleTab === "contracts" && <article className="module-card"><p className="status">Просмотр контрактов сервиса.</p></article>}
                 {moduleTab === "metrics" && String(effectiveRole).toLowerCase() !== "observer" && <article className="module-card"><p className="status">Метрики из Grafana.</p></article>}
-                {moduleTab === "logs" && String(effectiveRole).toLowerCase() !== "observer" && <article className="module-card"><p className="status">История и поток логов.</p></article>}
+                {moduleTab === "logs" && String(effectiveRole).toLowerCase() !== "observer" && (
+                  <article className="module-card">
+                    <div className="logs-filters">
+                      <select value={logLevel} onChange={(e) => setLogLevel(e.target.value)}>
+                        <option value="">Все уровни</option>
+                        <option value="debug">debug</option>
+                        <option value="info">info</option>
+                        <option value="warn">warn</option>
+                        <option value="error">error</option>
+                      </select>
+                      <input type="datetime-local" value={logFrom} onChange={(e) => setLogFrom(e.target.value)} />
+                      <input type="datetime-local" value={logTo} onChange={(e) => setLogTo(e.target.value)} />
+                      <input type="text" placeholder="Поиск по тексту" value={logText} onChange={(e) => setLogText(e.target.value)} />
+                    </div>
+                    {logsStatus && <p className="status">{logsStatus}</p>}
+                    {logs.length > 0 && (
+                      <div className="logs-list">
+                        {logs.map((item, idx) => (
+                          <div key={`${item.timestamp || "ts"}-${idx}`} className="log-row">
+                            <span className="log-time">{item.timestamp || "-"}</span>
+                            <span className="log-level">{item.level || "-"}</span>
+                            <span className="log-msg">{item.message || "-"}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </article>
+                )}
               </div>
             </section>
           </div>

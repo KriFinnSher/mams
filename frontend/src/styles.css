@@ -359,6 +359,44 @@ h1 {
   margin: 0 0 8px;
 }
 
+.logs-filters {
+  display: grid;
+  grid-template-columns: 140px 1fr 1fr 1.2fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.logs-filters select,
+.logs-filters input {
+  border: 1px solid #d6dce3;
+  border-radius: 8px;
+  padding: 7px 9px;
+}
+
+.logs-list {
+  border: 1px solid #d6dce3;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.log-row {
+  display: grid;
+  grid-template-columns: 220px 90px 1fr;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #eef2f7;
+  font-size: 13px;
+}
+
+.log-row:last-child {
+  border-bottom: 0;
+}
+
+.log-level {
+  text-transform: lowercase;
+  color: #0f62fe;
+}
+
 .info-grid {
   margin: 0;
   display: grid;
