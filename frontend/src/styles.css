@@ -178,3 +178,20 @@ h1 {
   margin: 0 0 10px;
   font-size: 18px;
 }
+
+.roles-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.roles-item {
+  border: 1px solid #d6dce3;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}

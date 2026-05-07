@@ -354,6 +354,20 @@ function ProfilePage() {
           Здесь отображаются только сервисы, где ваша роль отличается от наблюдателя
           (`observer`).
         </p>
+        {profile && Array.isArray(profile.services) && profile.services.length > 0 ? (
+          <ul className="roles-list">
+            {profile.services
+              .filter((item) => String(item.role || "").toLowerCase() !== "observer")
+              .map((item) => (
+                <li key={item.service_id} className="roles-item">
+                  <Link to={`/services/${item.service_id}`}>{item.service_name || item.service_id}</Link>
+                  <span>{item.role}</span>
+                </li>
+              ))}
+          </ul>
+        ) : (
+          <p className="status">Нет сервисов с недефолтной ролью.</p>
+        )}
       </section>
     </main>
   );
