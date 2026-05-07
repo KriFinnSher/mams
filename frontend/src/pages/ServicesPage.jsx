@@ -28,7 +28,10 @@ export function ServicesPage() {
       const token = localStorage.getItem("mams_token");
       if (!token) return setStatus("Ошибка авторизации.");
       try {
-        const response = await fetch("/api/services", { headers: { Authorization: `Bearer ${token}` } });
+        const response = await fetch("/api/services", {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
         if (!response.ok) return setStatus("Не удалось загрузить сервисы.");
         const data = await response.json();
         const list = Array.isArray(data) ? data : Array.isArray(data.services) ? data.services : [];

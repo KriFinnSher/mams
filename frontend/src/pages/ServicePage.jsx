@@ -40,6 +40,7 @@ export function ServicePage() {
   const [settingsEnabled, setSettingsEnabled] = useState(false);
   const [settingsMinCoverage, setSettingsMinCoverage] = useState(0);
   const [settingsStatus, setSettingsStatus] = useState("");
+  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,7 +48,10 @@ export function ServicePage() {
       const token = localStorage.getItem("mams_token");
       if (!token) return setStatus("Ошибка авторизации.");
       try {
-        const response = await fetch(`/api/services/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+        const response = await fetch(`/api/services/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
         if (!response.ok) return setStatus("Не удалось загрузить сервис.");
         const data = await response.json();
         if (cancelled) return;
@@ -56,7 +60,10 @@ export function ServicePage() {
         setSettingsMinCoverage(Number(data.minimum_test_coverage || 0));
         setStatus("");
 
-        const meResp = await fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } });
+        const meResp = await fetch("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
         if (meResp.ok) {
           const me = await meResp.json();
           const match = Array.isArray(me.services) ? me.services.find((item) => item.service_id === id) : null;
@@ -68,7 +75,21 @@ export function ServicePage() {
     }
     load();
     return () => { cancelled = true; };
-  }, [id]);
+  }, [id, reloadTick]);
+
+  useEffect(() => {
+    function onVisible() {
+      if (document.visibilityState === "visible") {
+        setReloadTick((v) => v + 1);
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
+    };
+  }, []);
 
   useEffect(() => {
     if (moduleTab !== "logs") return;
@@ -86,6 +107,7 @@ export function ServicePage() {
         params.set("limit", "100");
         const resp = await fetch(`/api/services/${id}/logs?${params.toString()}`, {
           headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
         });
         if (!resp.ok) return setLogsStatus("Не удалось загрузить логи.");
         const data = await resp.json();
@@ -111,6 +133,7 @@ export function ServicePage() {
       try {
         const resp = await fetch(`/api/services/${id}/releases`, {
           headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
         });
         if (!resp.ok) return setReleasesStatus("История релизов недоступна.");
         const data = await resp.json();

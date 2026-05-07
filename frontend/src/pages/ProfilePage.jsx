@@ -13,7 +13,10 @@ export function ProfilePage() {
       const token = localStorage.getItem("mams_token");
       if (!token) return setStatus("Ошибка авторизации.");
       try {
-        const response = await fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } });
+        const response = await fetch("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
         if (!response.ok) return setStatus("Не удалось загрузить профиль.");
         const data = await response.json();
         if (cancelled) return;

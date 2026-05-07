@@ -12,6 +12,7 @@ export function NavBar() {
       try {
         const response = await fetch("/api/auth/me", {
           headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
         });
         if (!response.ok) return;
         const data = await response.json();
