@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { NavBar } from "../components/NavBar";
 
 export function ProfilePage() {
+  const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [status, setStatus] = useState("Загрузка...");
 
@@ -31,7 +32,25 @@ export function ProfilePage() {
       <h1>Профиль пользователя</h1>
       <NavBar />
       {status && <p className="status">{status}</p>}
-      {profile && <section className="profile-card"><h2>Основная информация</h2><p>Логин: {profile.login}</p><p>Организация: {profile.organization_id}</p></section>}
+      {profile && (
+        <section className="profile-card">
+          <div className="profile-head">
+            <h2>Основная информация</h2>
+            <button
+              type="button"
+              className="logout-btn"
+              onClick={() => {
+                localStorage.removeItem("mams_token");
+                navigate("/login", { replace: true });
+              }}
+            >
+              Выйти
+            </button>
+          </div>
+          <p>Логин: {profile.login}</p>
+          <p>Организация: {profile.organization_id}</p>
+        </section>
+      )}
       <section className="profile-card">
         <h2>Роли в сервисах</h2>
         <p>Здесь отображаются только сервисы, где ваша роль отличается от наблюдателя (`observer`).</p>

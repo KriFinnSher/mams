@@ -26,12 +26,77 @@ h1 {
 .nav {
   display: flex;
   gap: 12px;
+  align-items: center;
   flex-wrap: wrap;
 }
 
 .nav a {
   text-decoration: none;
   color: #0f62fe;
+}
+
+.nav-spacer {
+  flex: 1;
+}
+
+.topbar {
+  margin: 6px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid #d6dce3;
+  border-radius: 10px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topbar-link {
+  text-decoration: none;
+  color: #0f62fe;
+  border: 1px solid #d6dce3;
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: #f8faff;
+}
+
+.topbar-link-accent {
+  background: #0f62fe;
+  color: #fff !important;
+  border-color: #0f62fe;
+}
+
+.profile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  border: 1px solid #d6dce3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  background: #fff;
+}
+
+.logout-btn {
+  height: 32px;
+  border: 1px solid #d6dce3;
+  border-radius: 8px;
+  background: #fff;
+  color: #17212b;
+  padding: 0 10px;
+  cursor: pointer;
 }
 
 .subtitle {
@@ -203,6 +268,13 @@ h1 {
 .profile-card h2 {
   margin: 0 0 10px;
   font-size: 18px;
+}
+
+.profile-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
 }
 
 .roles-list {
