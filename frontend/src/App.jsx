@@ -1,4 +1,4 @@
-import { Link, Navigate, Route, Routes, useParams } from "react-router-dom";
+import { Link, Navigate, Outlet, Route, Routes, useParams } from "react-router-dom";
 import { useState } from "react";
 import "./styles.css";
 
@@ -91,15 +91,26 @@ function ServicePage() {
   return <Layout title={`Карточка сервиса: ${id}`} />;
 }
 
+function RequireAuth() {
+  const token = localStorage.getItem("mams_token");
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Outlet />;
+}
+
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/services" element={<ServicesPage />} />
-      <Route path="/services/new" element={<NewServicePage />} />
-      <Route path="/services/:id" element={<ServicePage />} />
-      <Route path="/profile" element={<ProfilePage />} />
+      <Route element={<RequireAuth />}>
+        <Route path="/services" element={<ServicesPage />} />
+        <Route path="/services/new" element={<NewServicePage />} />
+        <Route path="/services/:id" element={<ServicePage />} />
+        <Route path="/profile" element={<ProfilePage />} />
+      </Route>
     </Routes>
   );
 }
