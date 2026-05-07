@@ -29,6 +29,7 @@ export function ServicePage() {
   const [releases, setReleases] = useState([]);
   const [releasesStatus, setReleasesStatus] = useState("");
   const releaseBlocked = Boolean(
+    releaseMode === "deploy" &&
     svc?.minimum_test_coverage_enabled &&
     Number(svc?.test_coverage) < Number(svc?.minimum_test_coverage),
   );

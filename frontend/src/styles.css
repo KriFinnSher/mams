@@ -400,11 +400,15 @@ h1 {
 
 .release-action {
   position: relative;
-  width: fit-content;
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .release-btn {
-  min-width: 190px;
+  width: min(100%, 420px);
+  height: 42px !important;
+  font-weight: 600;
 }
 
 .release-btn-disabled {
