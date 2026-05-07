@@ -28,6 +28,11 @@ export function ServicePage() {
   const [releaseStatus, setReleaseStatus] = useState("");
   const [releases, setReleases] = useState([]);
   const [releasesStatus, setReleasesStatus] = useState("");
+  const releaseBlocked = Boolean(
+    svc?.minimum_test_coverage_enabled &&
+    Number(svc?.test_coverage) < Number(svc?.minimum_test_coverage),
+  );
+  const releaseBlockedHint = `Релиз заблокирован: текущее покрытие (${svc?.test_coverage}%) ниже минимального порога (${svc?.minimum_test_coverage}%).`;
 
   useEffect(() => {
     let cancelled = false;
@@ -319,14 +324,11 @@ export function ServicePage() {
                   <button type="button" className={releaseMode === "deploy" ? "mode-btn active" : "mode-btn"} onClick={() => setReleaseMode("deploy")}>Deploy</button>
                   <button type="button" className={releaseMode === "rollback" ? "mode-btn active" : "mode-btn"} onClick={() => setReleaseMode("rollback")}>Rollback</button>
                 </div>
+                <div className={releaseBlocked ? "release-action has-tooltip" : "release-action"}>
                 <button
                   type="button"
-                  disabled={Boolean(svc?.minimum_test_coverage_enabled && Number(svc?.test_coverage) < Number(svc?.minimum_test_coverage))}
-                  title={
-                    svc?.minimum_test_coverage_enabled && Number(svc?.test_coverage) < Number(svc?.minimum_test_coverage)
-                      ? `Релиз заблокирован: текущее покрытие (${svc?.test_coverage}%) ниже минимального порога (${svc?.minimum_test_coverage}%).`
-                      : ""
-                  }
+                  className={releaseBlocked ? "release-btn release-btn-disabled" : "release-btn"}
+                  disabled={releaseBlocked}
                   onClick={async () => {
                   const token = localStorage.getItem("mams_token");
                   if (!token) return setReleaseStatus("Ошибка авторизации.");
@@ -362,6 +364,8 @@ export function ServicePage() {
                 }}>
                   {releaseMode === "rollback" ? "Запустить rollback" : "Запустить деплой"}
                 </button>
+                {releaseBlocked && <div className="release-tooltip">{releaseBlockedHint}</div>}
+                </div>
                 <p className="status">{releaseStatus}</p>
               </form>
               )}

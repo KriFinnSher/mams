@@ -398,6 +398,56 @@ h1 {
   color: #0f62fe !important;
 }
 
+.release-action {
+  position: relative;
+  width: fit-content;
+}
+
+.release-btn {
+  min-width: 190px;
+}
+
+.release-btn-disabled {
+  background: #e5e7eb !important;
+  color: #8a94a3 !important;
+  cursor: not-allowed !important;
+}
+
+.release-tooltip {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  z-index: 20;
+  width: 320px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #1f2937;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.35;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.release-tooltip::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 16px;
+  width: 10px;
+  height: 10px;
+  transform: rotate(45deg);
+  background: #1f2937;
+}
+
+.has-tooltip:hover .release-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .history-table {
   width: 100%;
   border-collapse: collapse;
