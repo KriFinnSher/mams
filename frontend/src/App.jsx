@@ -174,6 +174,65 @@ function NewServicePage() {
         <Link to="/services/new">Новый сервис</Link>
         <Link to="/profile">Профиль</Link>
       </nav>
+      <form className="service-form">
+        <label>
+          Название
+          <input name="name" type="text" required />
+        </label>
+        <label>
+          Описание
+          <textarea name="description" rows="3" />
+        </label>
+        <label>
+          Тип
+          <select name="type" defaultValue="business" required>
+            <option value="business">business</option>
+            <option value="composition">composition</option>
+          </select>
+        </label>
+        <label>
+          Покрытие тестами (%)
+          <input name="test_coverage" type="number" min="0" max="100" defaultValue="0" required />
+        </label>
+        <label>
+          Минимальное покрытие (%)
+          <input name="minimum_test_coverage" type="number" min="0" max="100" defaultValue="0" required />
+        </label>
+        <label className="checkbox-row">
+          <input name="minimum_test_coverage_enabled" type="checkbox" />
+          Минимальное покрытие включено
+        </label>
+        <label className="checkbox-row">
+          <input name="pii_sensitive" type="checkbox" />
+          Сервис работает с PII
+        </label>
+        <label>
+          Ссылка на команду
+          <input name="responsible_team_ref" type="text" placeholder="@team" />
+        </label>
+        <label>
+          Важность
+          <select name="importance" defaultValue="medium" required>
+            <option value="low">low</option>
+            <option value="medium">medium</option>
+            <option value="high">high</option>
+            <option value="critical">critical</option>
+          </select>
+        </label>
+        <label>
+          URL репозитория
+          <input name="repository_url" type="url" required />
+        </label>
+        <label>
+          Ветка по умолчанию
+          <input name="default_branch" type="text" defaultValue="main" required />
+        </label>
+        <label>
+          UID Grafana dashboard
+          <input name="grafana_dashboard_uid" type="text" />
+        </label>
+        <button type="submit">Создать сервис</button>
+      </form>
     </main>
   );
 }

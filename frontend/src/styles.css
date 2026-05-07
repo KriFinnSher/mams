@@ -122,3 +122,46 @@ h1 {
   color: #5f6b7a;
   font-size: 13px;
 }
+
+.service-form {
+  margin-top: 18px;
+  max-width: 680px;
+  display: grid;
+  gap: 12px;
+}
+
+.service-form label {
+  display: grid;
+  gap: 6px;
+}
+
+.service-form input,
+.service-form select,
+.service-form textarea {
+  width: 100%;
+  border: 1px solid #d6dce3;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  background: #fff;
+}
+
+.service-form button {
+  height: 42px;
+  border: 0;
+  border-radius: 10px;
+  background: #0f62fe;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.checkbox-row {
+  display: flex !important;
+  align-items: center;
+  gap: 10px !important;
+}
+
+.checkbox-row input {
+  width: auto;
+}
