@@ -290,7 +290,17 @@ function NewServicePage() {
 }
 
 function ProfilePage() {
-  return <Layout title="Профиль пользователя" />;
+  return (
+    <main className="page">
+      <h1>Профиль пользователя</h1>
+      <nav className="nav">
+        <Link to="/login">Логин</Link>
+        <Link to="/services">Сервисы</Link>
+        <Link to="/services/new">Новый сервис</Link>
+        <Link to="/profile">Профиль</Link>
+      </nav>
+    </main>
+  );
 }
 
 function ServicePage() {
