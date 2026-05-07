@@ -2,6 +2,7 @@ package githubclient
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
@@ -288,4 +289,104 @@ func first(items []string) string {
 		return ""
 	}
 	return items[0]
+}
+
+func TestDispatchWorkflow(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		repoURL    string
+		workflowID string
+		ref        string
+		inputs     map[string]string
+		token      string
+		respStatus int
+		respBody   string
+		doErr      error
+		wantErr    bool
+		wantAuth   string
+	}{
+		{
+			name:       "success",
+			repoURL:    "https://github.com/acme/service-a",
+			workflowID: "deploy.yml",
+			ref:        "main",
+			inputs:     map[string]string{"environment": "staging"},
+			token:      "tok",
+			respStatus: http.StatusNoContent,
+			wantAuth:   "Bearer tok",
+		},
+		{
+			name:       "invalid repo",
+			repoURL:    "https://gitlab.com/acme/service-a",
+			workflowID: "deploy.yml",
+			ref:        "main",
+			wantErr:    true,
+		},
+		{
+			name:       "missing workflow id",
+			repoURL:    "https://github.com/acme/service-a",
+			workflowID: "",
+			ref:        "main",
+			wantErr:    true,
+		},
+		{
+			name:       "bad status",
+			repoURL:    "https://github.com/acme/service-a",
+			workflowID: "deploy.yml",
+			ref:        "main",
+			respStatus: http.StatusUnprocessableEntity,
+			respBody:   `{}`,
+			wantErr:    true,
+		},
+		{
+			name:       "transport",
+			repoURL:    "https://github.com/acme/service-a",
+			workflowID: "deploy.yml",
+			ref:        "main",
+			doErr:      errors.New("network"),
+			wantErr:    true,
+		},
+	}
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			doer := &testDoer{err: tt.doErr}
+			if tt.respStatus != 0 {
+				doer.resp = &http.Response{
+					StatusCode: tt.respStatus,
+					Body:       io.NopCloser(strings.NewReader(tt.respBody)),
+				}
+			}
+			c := New(doer, tt.token)
+
+			err := c.DispatchWorkflow(context.Background(), tt.repoURL, tt.workflowID, tt.ref, tt.inputs)
+			if tt.wantErr {
+				if err == nil {
+					t.Fatalf("expected error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("error = %v", err)
+			}
+			if doer.req.Method != http.MethodPost {
+				t.Fatalf("method = %s, want POST", doer.req.Method)
+			}
+			if tt.wantAuth != "" && doer.req.Header.Get("Authorization") != tt.wantAuth {
+				t.Fatalf("authorization = %q, want %q", doer.req.Header.Get("Authorization"), tt.wantAuth)
+			}
+
+			var payload map[string]any
+			if err := json.NewDecoder(doer.req.Body).Decode(&payload); err != nil {
+				t.Fatalf("decode payload: %v", err)
+			}
+			if payload["ref"] != tt.ref {
+				t.Fatalf("payload.ref = %v, want %q", payload["ref"], tt.ref)
+			}
+		})
+	}
 }
