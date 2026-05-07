@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export function LoginPage() {
   const [status, setStatus] = useState("");
+  const navigate = useNavigate();
 
   async function onSubmit(event) {
     event.preventDefault();
@@ -25,7 +27,7 @@ export function LoginPage() {
       const data = await response.json();
       if (!data.token) return setStatus("Ошибка авторизации.");
       localStorage.setItem("mams_token", data.token);
-      setStatus("Токен сохранен в localStorage.");
+      navigate("/services", { replace: true });
     } catch {
       setStatus("Ошибка авторизации.");
     }

@@ -90,9 +90,14 @@ export function ServicePage() {
         <button type="button" className={tab === "contracts" ? "tab tab-active" : "tab"} onClick={() => setTab("contracts")}>
           Contracts
         </button>
+        {String(effectiveRole).toLowerCase() !== "observer" && (
+          <button type="button" className={tab === "metrics" ? "tab tab-active" : "tab"} onClick={() => setTab("metrics")}>
+            Metrics
+          </button>
+        )}
       </div>
       {tab === "overview" && (
-        <section className="panel-grid">
+        <section className="overview-grid">
           <section className="profile-card">
             <h2>Service information</h2>
             {status && <p className="status">{status}</p>}
@@ -167,7 +172,7 @@ export function ServicePage() {
               <button type="button">Запустить деплой</button>
             </form>
           </section>
-          <section className="profile-card">
+          <section className="profile-card history-panel">
             <h2>Versions history</h2>
             <table className="history-table">
               <thead>
@@ -186,7 +191,7 @@ export function ServicePage() {
               </tbody>
             </table>
           </section>
-          <section className="profile-card">
+          <section className="profile-card modules-panel">
             <h2>Modules</h2>
             <p className="status">Роль: {effectiveRole}</p>
             <div className="modules-grid">
@@ -260,6 +265,20 @@ export function ServicePage() {
                 );
               })}
             </ul>
+          )}
+        </section>
+      )}
+      {tab === "metrics" && String(effectiveRole).toLowerCase() !== "observer" && (
+        <section className="profile-card">
+          <h2>Metrics</h2>
+          {svc?.grafana_dashboard_uid ? (
+            <iframe
+              title="grafana-metrics"
+              className="metrics-frame"
+              src={`/api/services/${id}/metrics`}
+            />
+          ) : (
+            <p className="status">Для сервиса не задан `grafana_dashboard_uid`.</p>
           )}
         </section>
       )}
