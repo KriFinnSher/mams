@@ -137,13 +137,29 @@ function ServicesPage() {
       {items.length > 0 && (
         <ul className="services-list">
           {items.map((item) => (
-            <li key={item.id} className="services-item">
-              <Link to={`/services/${item.id}`}>{item.name || item.id}</Link>
-            </li>
+            <ServiceListCard key={item.id} service={item} />
           ))}
         </ul>
       )}
     </main>
+  );
+}
+
+function ServiceListCard({ service }) {
+  return (
+    <li className="services-item">
+      <div className="services-item-head">
+        <Link to={`/services/${service.id}`} className="services-item-title">
+          {service.name || service.id}
+        </Link>
+        {service.criticality && <span className="services-item-badge">{service.criticality}</span>}
+      </div>
+      {service.description && <p className="services-item-description">{service.description}</p>}
+      <div className="services-item-meta">
+        <span>ID: {service.id}</span>
+        {service.version && <span>Версия: {service.version}</span>}
+      </div>
+    </li>
   );
 }
 
