@@ -10,6 +10,7 @@ export function ServicePage() {
   const [effectiveRole, setEffectiveRole] = useState("observer");
   const [saveStatus, setSaveStatus] = useState("");
   const [isEditingInfo, setIsEditingInfo] = useState(false);
+  const [moduleTab, setModuleTab] = useState("metrics");
 
   useEffect(() => {
     let cancelled = false;
@@ -40,7 +41,7 @@ export function ServicePage() {
 
   return (
     <main className="page">
-      <h1>Карточка сервиса: {id}</h1>
+      <h1>{svc?.name || "Сервис"}</h1>
       <NavBar />
       <div className="tabs">
         <button type="button" className={tab === "overview" ? "tab tab-active" : "tab"} onClick={() => setTab("overview")}>
@@ -170,23 +171,19 @@ export function ServicePage() {
             <section className="profile-card">
               <h2>Модули</h2>
               <p className="status">Роль: {effectiveRole}</p>
-              <div className="modules-grid">
-                <article className="module-card">
-                  <h3>Контракты</h3>
-                  <p className="status">Просмотр контрактов сервиса.</p>
-                </article>
+              <div className="module-tabs">
                 {String(effectiveRole).toLowerCase() !== "observer" && (
                   <>
-                    <article className="module-card">
-                      <h3>Метрики</h3>
-                      <p className="status">Метрики из Grafana.</p>
-                    </article>
-                    <article className="module-card">
-                      <h3>Логи</h3>
-                      <p className="status">История и поток логов.</p>
-                    </article>
+                    <button type="button" className={moduleTab === "metrics" ? "module-tab active" : "module-tab"} onClick={() => setModuleTab("metrics")}>Метрики</button>
+                    <button type="button" className={moduleTab === "logs" ? "module-tab active" : "module-tab"} onClick={() => setModuleTab("logs")}>Логи</button>
                   </>
                 )}
+                <button type="button" className={moduleTab === "contracts" ? "module-tab active" : "module-tab"} onClick={() => setModuleTab("contracts")}>Контракты</button>
+              </div>
+              <div className="modules-grid">
+                {moduleTab === "contracts" && <article className="module-card"><p className="status">Просмотр контрактов сервиса.</p></article>}
+                {moduleTab === "metrics" && String(effectiveRole).toLowerCase() !== "observer" && <article className="module-card"><p className="status">Метрики из Grafana.</p></article>}
+                {moduleTab === "logs" && String(effectiveRole).toLowerCase() !== "observer" && <article className="module-card"><p className="status">История и поток логов.</p></article>}
               </div>
             </section>
           </div>

@@ -329,6 +329,25 @@ h1 {
   gap: 8px;
 }
 
+.module-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.module-tab {
+  border: 1px solid #d6dce3;
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.module-tab.active {
+  border-color: #0f62fe;
+  color: #0f62fe;
+}
+
 .module-card {
   border: 1px solid #d6dce3;
   border-radius: 8px;
