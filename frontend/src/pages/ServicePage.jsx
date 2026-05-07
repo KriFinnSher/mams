@@ -11,6 +11,7 @@ export function ServicePage() {
   const [saveStatus, setSaveStatus] = useState("");
   const [contracts, setContracts] = useState([]);
   const [contractsStatus, setContractsStatus] = useState("");
+  const [expandedMethod, setExpandedMethod] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -210,12 +211,43 @@ export function ServicePage() {
           {contractsStatus && <p className="status">{contractsStatus}</p>}
           {contracts.length > 0 && (
             <ul className="roles-list">
-              {contracts.map((item, idx) => (
-                <li key={`${item.name || "method"}-${idx}`} className="roles-item">
-                  <span>{item.name || item.method || "method"}</span>
-                  <span>{item.request || item.input || "-"}</span>
-                </li>
-              ))}
+              {contracts.map((item, idx) => {
+                const methodName = item.name || item.method || `method-${idx}`;
+                const key = `${methodName}-${idx}`;
+                const params = Array.isArray(item.parameters)
+                  ? item.parameters
+                  : Array.isArray(item.params)
+                    ? item.params
+                    : [];
+
+                return (
+                  <li key={key} className="contract-item">
+                    <button
+                      type="button"
+                      className="contract-toggle"
+                      onClick={() => setExpandedMethod((prev) => (prev === key ? "" : key))}
+                    >
+                      <span>{methodName}</span>
+                      <span>{expandedMethod === key ? "Скрыть" : "Показать"}</span>
+                    </button>
+                    {expandedMethod === key && (
+                      <div className="contract-body">
+                        <p>Request: {item.request || item.input || "-"}</p>
+                        <p>Response: {item.response || item.output || "-"}</p>
+                        {params.length > 0 ? (
+                          <ul className="contract-params">
+                            {params.map((p, pIdx) => (
+                              <li key={`${key}-p-${pIdx}`}>{p.name || p.field || "param"}: {p.type || "-"}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="status">Параметры отсутствуют.</p>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

@@ -196,6 +196,31 @@ h1 {
   gap: 10px;
 }
 
+.contract-item {
+  border: 1px solid #d6dce3;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.contract-toggle {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 10px;
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.contract-body {
+  padding: 0 10px 10px;
+}
+
+.contract-params {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
 .tabs {
   margin-top: 16px;
   display: flex;
