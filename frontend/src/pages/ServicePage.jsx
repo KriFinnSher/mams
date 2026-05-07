@@ -528,6 +528,21 @@ export function ServicePage() {
                       body: JSON.stringify(payload),
                     });
                     if (!resp.ok) return setSettingsStatus("Не удалось сохранить настройки.");
+                    setSvc((prev) => (prev ? ({
+                      ...prev,
+                      minimum_test_coverage_enabled: settingsEnabled,
+                      minimum_test_coverage: Number(settingsMinCoverage),
+                    }) : prev));
+                    const fresh = await fetch(`/api/services/${id}`, {
+                      headers: { Authorization: `Bearer ${token}` },
+                      cache: "no-store",
+                    });
+                    if (fresh.ok) {
+                      const freshData = await fresh.json();
+                      setSvc(freshData);
+                      setSettingsEnabled(Boolean(freshData.minimum_test_coverage_enabled));
+                      setSettingsMinCoverage(Number(freshData.minimum_test_coverage || 0));
+                    }
                     setSettingsStatus("Настройки сохранены.");
                     setIsEditingSettings(false);
                   } catch {
