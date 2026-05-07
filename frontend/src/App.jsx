@@ -39,18 +39,22 @@ function LoginPage() {
         body: JSON.stringify({ login, password }),
       });
       if (!response.ok) {
-        setStatus("Ошибка входа.");
+        if (response.status === 401) {
+          setStatus("Неверный логин или пароль.");
+          return;
+        }
+        setStatus("Ошибка авторизации.");
         return;
       }
       const data = await response.json();
       if (!data.token) {
-        setStatus("Токен отсутствует в ответе.");
+        setStatus("Ошибка авторизации.");
         return;
       }
       localStorage.setItem("mams_token", data.token);
       setStatus("Токен сохранен в localStorage.");
     } catch {
-      setStatus("Не удалось подключиться к backend.");
+      setStatus("Ошибка авторизации.");
     }
   }
 
