@@ -469,6 +469,16 @@ h1 {
   color: #0f62fe;
 }
 
+.more-btn {
+  margin-top: 8px;
+  height: 34px;
+  border: 1px solid #d6dce3;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  padding: 0 12px;
+}
+
 .info-grid {
   margin: 0;
   display: grid;

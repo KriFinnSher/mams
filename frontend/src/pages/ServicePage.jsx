@@ -17,6 +17,7 @@ export function ServicePage() {
   const [logText, setLogText] = useState("");
   const [logFrom, setLogFrom] = useState("");
   const [logTo, setLogTo] = useState("");
+  const [logsCursor, setLogsCursor] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -67,6 +68,8 @@ export function ServicePage() {
         if (cancelled) return;
         const list = Array.isArray(data?.logs) ? data.logs : Array.isArray(data) ? data : [];
         setLogs(list);
+        const last = list[list.length - 1];
+        setLogsCursor(last?.timestamp || "");
         setLogsStatus(list.length === 0 ? "Логи не найдены." : "");
       } catch {
         if (!cancelled) setLogsStatus("Не удалось загрузить логи.");
@@ -75,6 +78,23 @@ export function ServicePage() {
     loadLogs();
     return () => { cancelled = true; };
   }, [id, moduleTab, logLevel, logText, logFrom, logTo]);
+
+  useEffect(() => {
+    if (moduleTab !== "logs" || String(effectiveRole).toLowerCase() === "observer") return;
+    const token = localStorage.getItem("mams_token");
+    if (!token) return;
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const ws = new WebSocket(`${protocol}://${window.location.host}/api/services/${id}/logs/stream`, [token]);
+    ws.onmessage = (event) => {
+      try {
+        const entry = JSON.parse(event.data);
+        setLogs((prev) => [entry, ...prev].slice(0, 200));
+      } catch {
+        // ignore malformed entries
+      }
+    };
+    return () => ws.close();
+  }, [id, moduleTab, effectiveRole]);
 
   return (
     <main className="page">
@@ -246,6 +266,37 @@ export function ServicePage() {
                         ))}
                       </div>
                     )}
+                    <button
+                      type="button"
+                      className="more-btn"
+                      onClick={async () => {
+                        const token = localStorage.getItem("mams_token");
+                        if (!token) return;
+                        if (!logsCursor) return;
+                        try {
+                          const params = new URLSearchParams();
+                          if (logLevel) params.set("level", logLevel);
+                          if (logText) params.set("text", logText);
+                          if (logFrom) params.set("time_from", new Date(logFrom).toISOString());
+                          params.set("time_to", logsCursor);
+                          params.set("limit", "100");
+                          const resp = await fetch(`/api/services/${id}/logs?${params.toString()}`, {
+                            headers: { Authorization: `Bearer ${token}` },
+                          });
+                          if (!resp.ok) return;
+                          const data = await resp.json();
+                          const list = Array.isArray(data?.logs) ? data.logs : Array.isArray(data) ? data : [];
+                          if (list.length === 0) return;
+                          setLogs((prev) => [...prev, ...list]);
+                          const last = list[list.length - 1];
+                          setLogsCursor(last?.timestamp || logsCursor);
+                        } catch {
+                          // ignore load-more error
+                        }
+                      }}
+                    >
+                      Загрузить ещё
+                    </button>
                   </article>
                 )}
               </div>
