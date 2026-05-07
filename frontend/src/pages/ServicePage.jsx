@@ -8,6 +8,7 @@ export function ServicePage() {
   const [svc, setSvc] = useState(null);
   const [status, setStatus] = useState("Загрузка...");
   const [effectiveRole, setEffectiveRole] = useState("observer");
+  const [saveStatus, setSaveStatus] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +55,7 @@ export function ServicePage() {
             <h2>Service information</h2>
             {status && <p className="status">{status}</p>}
             {svc && (
+              <>
               <dl className="info-grid">
                 <dt>Название</dt><dd>{svc.name || "-"}</dd>
                 <dt>Тип</dt><dd>{svc.type || "-"}</dd>
@@ -68,6 +70,50 @@ export function ServicePage() {
                 <dt>Ветка по умолчанию</dt><dd>{svc.default_branch || "-"}</dd>
                 <dt>Grafana UID</dt><dd>{svc.grafana_dashboard_uid || "-"}</dd>
               </dl>
+              <form className="service-form" onSubmit={async (event) => {
+                event.preventDefault();
+                const token = localStorage.getItem("mams_token");
+                if (!token) return setSaveStatus("Ошибка авторизации.");
+                const form = new FormData(event.currentTarget);
+                const payload = {
+                  description: String(form.get("description") || ""),
+                  type: String(form.get("type") || ""),
+                  test_coverage: Number(form.get("test_coverage") || 0),
+                  pii_sensitive: Boolean(form.get("pii_sensitive")),
+                  responsible_team_ref: String(form.get("responsible_team_ref") || ""),
+                  importance: String(form.get("importance") || ""),
+                  repository_url: String(form.get("repository_url") || ""),
+                  default_branch: String(form.get("default_branch") || ""),
+                  grafana_dashboard_uid: String(form.get("grafana_dashboard_uid") || ""),
+                };
+                setSaveStatus("Сохранение...");
+                try {
+                  const resp = await fetch(`/api/services/${id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                    body: JSON.stringify(payload),
+                  });
+                  if (!resp.ok) return setSaveStatus("Не удалось сохранить изменения.");
+                  const data = await resp.json();
+                  setSvc((prev) => ({ ...prev, ...data }));
+                  setSaveStatus("Изменения сохранены.");
+                } catch {
+                  setSaveStatus("Не удалось сохранить изменения.");
+                }
+              }}>
+                <label>Описание<textarea name="description" rows="3" defaultValue={svc.description || ""} /></label>
+                <label>Тип<select name="type" defaultValue={svc.type || "business"}><option value="business">business</option><option value="composition">composition</option></select></label>
+                <label>Покрытие тестами (%)<input name="test_coverage" type="number" min="0" max="100" defaultValue={svc.test_coverage ?? 0} /></label>
+                <label className="checkbox-row"><input name="pii_sensitive" type="checkbox" defaultChecked={Boolean(svc.pii_sensitive)} />Сервис работает с PII</label>
+                <label>Ссылка на команду<input name="responsible_team_ref" type="text" defaultValue={svc.responsible_team_ref || ""} /></label>
+                <label>Важность<select name="importance" defaultValue={svc.importance || "medium"}><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="critical">critical</option></select></label>
+                <label>URL репозитория<input name="repository_url" type="url" defaultValue={svc.repository_url || ""} /></label>
+                <label>Ветка по умолчанию<input name="default_branch" type="text" defaultValue={svc.default_branch || "main"} /></label>
+                <label>UID Grafana dashboard<input name="grafana_dashboard_uid" type="text" defaultValue={svc.grafana_dashboard_uid || ""} /></label>
+                <button type="submit">Сохранить изменения</button>
+              </form>
+              <p className="status">{saveStatus}</p>
+              </>
             )}
           </section>
           <section className="profile-card">
