@@ -9,6 +9,8 @@ export function ServicePage() {
   const [status, setStatus] = useState("Загрузка...");
   const [effectiveRole, setEffectiveRole] = useState("observer");
   const [saveStatus, setSaveStatus] = useState("");
+  const [contracts, setContracts] = useState([]);
+  const [contractsStatus, setContractsStatus] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -37,6 +39,31 @@ export function ServicePage() {
     return () => { cancelled = true; };
   }, [id]);
 
+  useEffect(() => {
+    if (tab !== "contracts") return;
+    let cancelled = false;
+    async function loadContracts() {
+      const token = localStorage.getItem("mams_token");
+      if (!token) return setContractsStatus("Ошибка авторизации.");
+      setContractsStatus("Загрузка...");
+      try {
+        const resp = await fetch(`/api/services/${id}/contracts`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!resp.ok) return setContractsStatus("Не удалось загрузить контракты.");
+        const data = await resp.json();
+        if (cancelled) return;
+        const list = Array.isArray(data?.methods) ? data.methods : Array.isArray(data) ? data : [];
+        setContracts(list);
+        setContractsStatus(list.length === 0 ? "Контракты не найдены." : "");
+      } catch {
+        if (!cancelled) setContractsStatus("Не удалось загрузить контракты.");
+      }
+    }
+    loadContracts();
+    return () => { cancelled = true; };
+  }, [id, tab]);
+
   return (
     <main className="page">
       <h1>Карточка сервиса: {id}</h1>
@@ -47,6 +74,9 @@ export function ServicePage() {
         </button>
         <button type="button" className={tab === "settings" ? "tab tab-active" : "tab"} onClick={() => setTab("settings")}>
           Settings
+        </button>
+        <button type="button" className={tab === "contracts" ? "tab tab-active" : "tab"} onClick={() => setTab("contracts")}>
+          Contracts
         </button>
       </div>
       {tab === "overview" && (
@@ -172,6 +202,22 @@ export function ServicePage() {
         <section className="profile-card">
           <h2>Settings</h2>
           <p className="status">Настройки будут добавлены в следующих задачах.</p>
+        </section>
+      )}
+      {tab === "contracts" && (
+        <section className="profile-card">
+          <h2>Contracts</h2>
+          {contractsStatus && <p className="status">{contractsStatus}</p>}
+          {contracts.length > 0 && (
+            <ul className="roles-list">
+              {contracts.map((item, idx) => (
+                <li key={`${item.name || "method"}-${idx}`} className="roles-item">
+                  <span>{item.name || item.method || "method"}</span>
+                  <span>{item.request || item.input || "-"}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
     </main>
