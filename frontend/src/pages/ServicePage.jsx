@@ -82,7 +82,23 @@ export function ServicePage() {
               </tbody>
             </table>
           </section>
-          <section className="profile-card"><h2>Modules</h2><p className="status">Заполняется на следующих задачах.</p></section>
+          <section className="profile-card">
+            <h2>Modules</h2>
+            <div className="modules-grid">
+              <article className="module-card">
+                <h3>Contracts</h3>
+                <p className="status">Просмотр контрактов сервиса.</p>
+              </article>
+              <article className="module-card">
+                <h3>Metrics</h3>
+                <p className="status">Метрики из Grafana.</p>
+              </article>
+              <article className="module-card">
+                <h3>Logs</h3>
+                <p className="status">История и поток логов.</p>
+              </article>
+            </div>
+          </section>
         </section>
       )}
       {tab === "settings" && (
