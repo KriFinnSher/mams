@@ -169,3 +169,96 @@ func (mr *MockLogReaderMockRecorder) ListByService(ctx, serviceID, filter any) *
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByService", reflect.TypeOf((*MockLogReader)(nil).ListByService), ctx, serviceID, filter)
 }
+
+// MockProtoReader is a mock of ProtoReader interface.
+type MockProtoReader struct {
+	ctrl     *gomock.Controller
+	recorder *MockProtoReaderMockRecorder
+	isgomock struct{}
+}
+
+// MockProtoReaderMockRecorder is the mock recorder for MockProtoReader.
+type MockProtoReaderMockRecorder struct {
+	mock *MockProtoReader
+}
+
+// NewMockProtoReader creates a new mock instance.
+func NewMockProtoReader(ctrl *gomock.Controller) *MockProtoReader {
+	mock := &MockProtoReader{ctrl: ctrl}
+	mock.recorder = &MockProtoReaderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockProtoReader) EXPECT() *MockProtoReaderMockRecorder {
+	return m.recorder
+}
+
+// ReadProjectProto mocks base method.
+func (m *MockProtoReader) ReadProjectProto(ctx context.Context, repositoryURL, ref string) ([]byte, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReadProjectProto", ctx, repositoryURL, ref)
+	ret0, _ := ret[0].([]byte)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReadProjectProto indicates an expected call of ReadProjectProto.
+func (mr *MockProtoReaderMockRecorder) ReadProjectProto(ctx, repositoryURL, ref any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadProjectProto", reflect.TypeOf((*MockProtoReader)(nil).ReadProjectProto), ctx, repositoryURL, ref)
+}
+
+// MockReleaseReader is a mock of ReleaseReader interface.
+type MockReleaseReader struct {
+	ctrl     *gomock.Controller
+	recorder *MockReleaseReaderMockRecorder
+	isgomock struct{}
+}
+
+// MockReleaseReaderMockRecorder is the mock recorder for MockReleaseReader.
+type MockReleaseReaderMockRecorder struct {
+	mock *MockReleaseReader
+}
+
+// NewMockReleaseReader creates a new mock instance.
+func NewMockReleaseReader(ctrl *gomock.Controller) *MockReleaseReader {
+	mock := &MockReleaseReader{ctrl: ctrl}
+	mock.recorder = &MockReleaseReaderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockReleaseReader) EXPECT() *MockReleaseReaderMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method.
+func (m *MockReleaseReader) Create(ctx context.Context, rel models.Release) (models.Release, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, rel)
+	ret0, _ := ret[0].(models.Release)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockReleaseReaderMockRecorder) Create(ctx, rel any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockReleaseReader)(nil).Create), ctx, rel)
+}
+
+// ListByService mocks base method.
+func (m *MockReleaseReader) ListByService(ctx context.Context, serviceID uuid.UUID) ([]models.Release, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByService", ctx, serviceID)
+	ret0, _ := ret[0].([]models.Release)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListByService indicates an expected call of ListByService.
+func (mr *MockReleaseReaderMockRecorder) ListByService(ctx, serviceID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByService", reflect.TypeOf((*MockReleaseReader)(nil).ListByService), ctx, serviceID)
+}

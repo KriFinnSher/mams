@@ -28,4 +28,5 @@ type ProtoReader interface {
 
 type ReleaseReader interface {
 	ListByService(ctx context.Context, serviceID uuid.UUID) ([]models.Release, error)
+	Create(ctx context.Context, rel models.Release) (models.Release, error)
 }

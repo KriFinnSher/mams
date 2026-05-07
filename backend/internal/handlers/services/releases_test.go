@@ -30,6 +30,13 @@ func (r testReleaseReader) ListByService(_ context.Context, _ uuid.UUID) ([]mode
 	return r.list, r.err
 }
 
+func (r testReleaseReader) Create(_ context.Context, rel models.Release) (models.Release, error) {
+	if r.err != nil {
+		return models.Release{}, r.err
+	}
+	return rel, nil
+}
+
 func TestHandlerGetReleases(t *testing.T) {
 	t.Parallel()
 
@@ -128,4 +135,3 @@ func TestHandlerGetReleases(t *testing.T) {
 		})
 	}
 }
-
