@@ -51,7 +51,14 @@ export function ServicePage() {
         const resp = await fetch(`/api/services/${id}/contracts`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!resp.ok) return setContractsStatus("Не удалось загрузить контракты.");
+        if (!resp.ok) {
+          if (resp.status === 404) {
+            setContractsStatus("Файл project.proto не найден.");
+            return;
+          }
+          setContractsStatus("Не удалось загрузить контракты.");
+          return;
+        }
         const data = await resp.json();
         if (cancelled) return;
         const list = Array.isArray(data?.methods) ? data.methods : Array.isArray(data) ? data : [];
