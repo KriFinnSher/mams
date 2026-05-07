@@ -3,6 +3,7 @@ package services
 import (
 	"net/http"
 
+	"github.com/mams/backend/internal/config"
 	"github.com/mams/backend/internal/logx"
 	authmw "github.com/mams/backend/internal/middleware/auth"
 	"github.com/mams/backend/internal/utils"
@@ -14,10 +15,11 @@ type Handler struct {
 	logs     LogReader
 	wsHub    *ws.Hub
 	log      *logx.Logger
+	cfg      *config.Config
 }
 
 func NewHandler(services ServiceReader, logs LogReader, wsHub *ws.Hub, log *logx.Logger) *Handler {
-	return &Handler{services: services, logs: logs, wsHub: wsHub, log: log}
+	return &Handler{services: services, logs: logs, wsHub: wsHub, log: log, cfg: config.Get()}
 }
 
 type serviceItem struct {

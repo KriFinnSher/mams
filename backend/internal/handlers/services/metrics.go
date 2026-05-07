@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	authmw "github.com/mams/backend/internal/middleware/auth"
@@ -39,8 +40,18 @@ func (h *Handler) GetMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSON(w, http.StatusOK, map[string]any{
-		"service_id":             svc.ID.String(),
-		"grafana_dashboard_uid":  svc.GrafanaDashboardUID,
+		"service_id":            svc.ID.String(),
+		"grafana_dashboard_uid": svc.GrafanaDashboardUID,
+		"embed_url":             buildGrafanaEmbedURL(h.cfg.GrafanaURL, svc.GrafanaDashboardUID),
 	})
 }
 
+func buildGrafanaEmbedURL(baseURL, uid string) string {
+	baseURL = strings.TrimRight(strings.TrimSpace(baseURL), "/")
+	uid = strings.TrimSpace(uid)
+	if baseURL == "" || uid == "" {
+		return ""
+	}
+
+	return baseURL + "/d/" + uid + "?kiosk"
+}

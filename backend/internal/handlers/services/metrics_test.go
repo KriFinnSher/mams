@@ -102,6 +102,7 @@ func TestHandlerGetMetrics(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			repo := mocks.NewMockServiceReader(ctrl)
 			h := NewHandler(repo, nil, ws.NewHub(), logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
+			h.cfg.GrafanaURL = "https://grafana.example"
 			req := tt.setup(repo)
 			rec := httptest.NewRecorder()
 
@@ -116,8 +117,13 @@ func TestHandlerGetMetrics(t *testing.T) {
 				if body["error"] != tt.wantErr {
 					t.Fatalf("error = %q, want %q", body["error"], tt.wantErr)
 				}
+			} else if tt.wantStatus == http.StatusOK {
+				var body map[string]any
+				_ = json.Unmarshal(rec.Body.Bytes(), &body)
+				if body["embed_url"] != "https://grafana.example/d/abc123?kiosk" {
+					t.Fatalf("embed_url = %v, want %q", body["embed_url"], "https://grafana.example/d/abc123?kiosk")
+				}
 			}
 		})
 	}
 }
-

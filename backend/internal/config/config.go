@@ -18,6 +18,7 @@ type Config struct {
 	MongoURI  string
 	MongoDB   string
 	MongoLogsCollection string
+	GrafanaURL string
 	JWTSecret string
 	JWTTTL    time.Duration
 }
@@ -59,6 +60,10 @@ func Get() *Config {
 		if mongoLogsCollection == "" {
 			mongoLogsCollection = "logs"
 		}
+		grafanaURL := os.Getenv("GRAFANA_URL")
+		if grafanaURL == "" {
+			grafanaURL = "http://localhost:3001"
+		}
 
 		cfg = &Config{
 			HTTPHost:  httpHost,
@@ -67,6 +72,7 @@ func Get() *Config {
 			MongoURI: mongoURI,
 			MongoDB: mongoDB,
 			MongoLogsCollection: mongoLogsCollection,
+			GrafanaURL: grafanaURL,
 			JWTSecret: jwtSecret,
 			JWTTTL:    utils.ParseTTLSeconds(os.Getenv("JWT_TTL"), 3600),
 		}
