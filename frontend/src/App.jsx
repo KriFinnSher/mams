@@ -290,6 +290,47 @@ function NewServicePage() {
 }
 
 function ProfilePage() {
+  const [profile, setProfile] = useState(null);
+  const [status, setStatus] = useState("Загрузка...");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      const token = localStorage.getItem("mams_token");
+      if (!token) {
+        setStatus("Ошибка авторизации.");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) {
+          setStatus("Не удалось загрузить профиль.");
+          return;
+        }
+
+        const data = await response.json();
+        if (cancelled) {
+          return;
+        }
+        setProfile(data);
+        setStatus("");
+      } catch {
+        if (!cancelled) {
+          setStatus("Не удалось загрузить профиль.");
+        }
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   return (
     <main className="page">
       <h1>Профиль пользователя</h1>
@@ -299,6 +340,14 @@ function ProfilePage() {
         <Link to="/services/new">Новый сервис</Link>
         <Link to="/profile">Профиль</Link>
       </nav>
+      {status && <p className="status">{status}</p>}
+      {profile && (
+        <section className="profile-card">
+          <h2>Основная информация</h2>
+          <p>Логин: {profile.login}</p>
+          <p>Организация: {profile.organization_id}</p>
+        </section>
+      )}
     </main>
   );
 }
