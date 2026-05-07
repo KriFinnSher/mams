@@ -107,7 +107,7 @@ func TestHandlerGet(t *testing.T) {
 			t.Parallel()
 			ctrl := gomock.NewController(t)
 			repo := mocks.NewMockServiceReader(ctrl)
-			h := NewHandler(repo, nil, nil, ws.NewHub(), logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
+			h := NewHandler(repo, nil, nil, nil, ws.NewHub(), logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
 			req := tt.setup(repo)
 			rec := httptest.NewRecorder()
 

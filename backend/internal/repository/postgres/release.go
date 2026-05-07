@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/mams/backend/internal/models"
 )
@@ -18,6 +19,26 @@ type ReleaseRepository struct {
 
 func NewReleaseRepository(q serviceQueryer) *ReleaseRepository {
 	return &ReleaseRepository{q: q}
+}
+
+type releasePoolAdapter struct {
+	pool *pgxpool.Pool
+}
+
+func (a releasePoolAdapter) QueryRow(ctx context.Context, sql string, args ...any) rowScanner {
+	return a.pool.QueryRow(ctx, sql, args...)
+}
+
+func (a releasePoolAdapter) Query(ctx context.Context, sql string, args ...any) (serviceRows, error) {
+	rows, err := a.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
+func NewReleaseRepositoryPool(pool *pgxpool.Pool) *ReleaseRepository {
+	return NewReleaseRepository(releasePoolAdapter{pool: pool})
 }
 
 func (r *ReleaseRepository) Create(ctx context.Context, rel models.Release) (models.Release, error) {

@@ -61,6 +61,7 @@ func main() {
 	access := postgresrepo.NewServiceAccessRepositoryPool(pool)
 	profile := postgresrepo.NewProfileReader(users, services)
 	logsRepo := mongorepo.NewLogsRepositoryCollection(mongoClient.Database(cfg.MongoDB).Collection(cfg.MongoLogsCollection))
+	releasesRepo := postgresrepo.NewReleaseRepositoryPool(pool)
 	ghClient := githubclient.New(http.DefaultClient, cfg.GitHubToken)
 
 	issuer, err := authcore.NewJWTIssuer(cfg.JWTSecret, cfg.JWTTTL)
@@ -74,7 +75,7 @@ func main() {
 	logger := logx.New(slog.Default())
 	hub := ws.NewHub()
 	login := authhandler.NewLoginHandler(profile, issuer, logger)
-	servicesH := serviceshandler.NewHandler(services, logsRepo, ghClient, hub, logger)
+	servicesH := serviceshandler.NewHandler(services, logsRepo, ghClient, releasesRepo, hub, logger)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/login", func(w http.ResponseWriter, r *http.Request) {
@@ -149,6 +150,13 @@ func main() {
 			return
 		}
 		servicesH.GetContracts(w, r)
+	}))
+	protected.Handle("/api/services/{id}/releases", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		servicesH.GetReleases(w, r)
 	}))
 	mux.Handle("/api/", authmw.RequireAuth(validator, protected))
 

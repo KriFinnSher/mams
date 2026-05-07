@@ -25,3 +25,7 @@ type LogReader interface {
 type ProtoReader interface {
 	ReadProjectProto(ctx context.Context, repositoryURL, ref string) ([]byte, error)
 }
+
+type ReleaseReader interface {
+	ListByService(ctx context.Context, serviceID uuid.UUID) ([]models.Release, error)
+}

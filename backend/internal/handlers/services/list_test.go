@@ -71,7 +71,7 @@ func TestHandlerList(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			reader := mocks.NewMockServiceReader(ctrl)
-			h := NewHandler(reader, nil, nil, ws.NewHub(), logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
+			h := NewHandler(reader, nil, nil, nil, ws.NewHub(), logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
 			req := tt.setup(reader)
 			rec := httptest.NewRecorder()
 

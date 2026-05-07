@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
-	"github.com/mams/backend/internal/githubclient"
 	"github.com/mams/backend/internal/handlers/services/mocks"
 	"github.com/mams/backend/internal/logx"
 	authmw "github.com/mams/backend/internal/middleware/auth"
@@ -21,25 +21,26 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
-type testProtoReader struct {
-	raw []byte
-	err error
+type testReleaseReader struct {
+	list []models.Release
+	err  error
 }
 
-func (r testProtoReader) ReadProjectProto(_ context.Context, _, _ string) ([]byte, error) {
-	return r.raw, r.err
+func (r testReleaseReader) ListByService(_ context.Context, _ uuid.UUID) ([]models.Release, error) {
+	return r.list, r.err
 }
 
-func TestHandlerGetContracts(t *testing.T) {
+func TestHandlerGetReleases(t *testing.T) {
 	t.Parallel()
 
 	orgID := uuid.New()
+	otherOrgID := uuid.New()
 	serviceID := uuid.New()
 
 	tests := []struct {
 		name       string
 		setupRepo  func(m *mocks.MockServiceReader)
-		proto      testProtoReader
+		releases   testReleaseReader
 		wantStatus int
 		wantErr    string
 	}{
@@ -47,58 +48,49 @@ func TestHandlerGetContracts(t *testing.T) {
 			name: "success",
 			setupRepo: func(m *mocks.MockServiceReader) {
 				m.EXPECT().GetByID(gomock.Any(), serviceID).Return(models.Service{
-					ID:             serviceID,
-					OrganizationID: orgID,
-					RepositoryURL:  "https://github.com/acme/repo",
-					DefaultBranch:  "main",
+					ID: serviceID, OrganizationID: orgID,
 				}, nil)
 			},
-			proto: testProtoReader{raw: []byte(`service S { rpc Get(GetReq) returns (GetRes); } message GetReq { string id = 1; }`)},
+			releases: testReleaseReader{list: []models.Release{
+				{ID: uuid.New(), ServiceID: serviceID, GitTag: "v1.0.0", Branch: "main", Environment: "prod", Strategy: "rolling", Status: "success", Description: "ok", AuthorUserID: uuid.New(), DeployedAt: time.Now()},
+			}},
 			wantStatus: http.StatusOK,
 		},
 		{
-			name: "proto missing",
-			setupRepo: func(m *mocks.MockServiceReader) {
-				m.EXPECT().GetByID(gomock.Any(), serviceID).Return(models.Service{
-					ID:             serviceID,
-					OrganizationID: orgID,
-					RepositoryURL:  "https://github.com/acme/repo",
-					DefaultBranch:  "main",
-				}, nil)
-			},
-			proto: testProtoReader{err: githubclient.ErrProtoNotFound},
-			wantStatus: http.StatusNotFound,
-			wantErr: "project.proto is missing",
-		},
-		{
-			name: "invalid proto",
-			setupRepo: func(m *mocks.MockServiceReader) {
-				m.EXPECT().GetByID(gomock.Any(), serviceID).Return(models.Service{
-					ID:             serviceID,
-					OrganizationID: orgID,
-					RepositoryURL:  "https://github.com/acme/repo",
-					DefaultBranch:  "main",
-				}, nil)
-			},
-			proto: testProtoReader{raw: []byte(`syntax="proto3";`)},
+			name: "invalid id",
+			setupRepo: func(_ *mocks.MockServiceReader) {},
+			releases: testReleaseReader{},
 			wantStatus: http.StatusBadRequest,
-			wantErr: "project.proto is invalid",
+			wantErr: "invalid service id",
 		},
 		{
 			name: "service not found",
 			setupRepo: func(m *mocks.MockServiceReader) {
 				m.EXPECT().GetByID(gomock.Any(), serviceID).Return(models.Service{}, postgresrepo.ErrServiceNotFound)
 			},
-			proto: testProtoReader{},
+			releases: testReleaseReader{},
 			wantStatus: http.StatusNotFound,
 			wantErr: "service not found",
 		},
 		{
-			name: "repo error",
+			name: "other org",
 			setupRepo: func(m *mocks.MockServiceReader) {
-				m.EXPECT().GetByID(gomock.Any(), serviceID).Return(models.Service{}, errors.New("db"))
+				m.EXPECT().GetByID(gomock.Any(), serviceID).Return(models.Service{
+					ID: serviceID, OrganizationID: otherOrgID,
+				}, nil)
 			},
-			proto: testProtoReader{},
+			releases: testReleaseReader{},
+			wantStatus: http.StatusNotFound,
+			wantErr: "service not found",
+		},
+		{
+			name: "releases error",
+			setupRepo: func(m *mocks.MockServiceReader) {
+				m.EXPECT().GetByID(gomock.Any(), serviceID).Return(models.Service{
+					ID: serviceID, OrganizationID: orgID,
+				}, nil)
+			},
+			releases: testReleaseReader{err: errors.New("db")},
 			wantStatus: http.StatusInternalServerError,
 			wantErr: "internal error",
 		},
@@ -111,13 +103,17 @@ func TestHandlerGetContracts(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			repo := mocks.NewMockServiceReader(ctrl)
 			tt.setupRepo(repo)
-			h := NewHandler(repo, nil, tt.proto, nil, ws.NewHub(), logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
-			req := httptest.NewRequest(http.MethodGet, "/api/services/"+serviceID.String()+"/contracts", nil)
-			req.SetPathValue("id", serviceID.String())
+			h := NewHandler(repo, nil, nil, tt.releases, ws.NewHub(), logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
+			pathID := serviceID.String()
+			if tt.name == "invalid id" {
+				pathID = "bad-id"
+			}
+			req := httptest.NewRequest(http.MethodGet, "/api/services/"+pathID+"/releases", nil)
+			req.SetPathValue("id", pathID)
 			req = req.WithContext(authmw.WithClaims(req.Context(), authmw.Claims{OrganizationID: orgID}))
 			rec := httptest.NewRecorder()
 
-			h.GetContracts(rec, req)
+			h.GetReleases(rec, req)
 
 			if rec.Code != tt.wantStatus {
 				t.Fatalf("status = %d, want %d", rec.Code, tt.wantStatus)
