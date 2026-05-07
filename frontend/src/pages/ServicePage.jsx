@@ -7,6 +7,7 @@ export function ServicePage() {
   const [tab, setTab] = useState("overview");
   const [svc, setSvc] = useState(null);
   const [status, setStatus] = useState("Загрузка...");
+  const [effectiveRole, setEffectiveRole] = useState("observer");
 
   useEffect(() => {
     let cancelled = false;
@@ -20,6 +21,13 @@ export function ServicePage() {
         if (cancelled) return;
         setSvc(data);
         setStatus("");
+
+        const meResp = await fetch("/api/auth/me", { headers: { Authorization: `Bearer ${token}` } });
+        if (meResp.ok) {
+          const me = await meResp.json();
+          const match = Array.isArray(me.services) ? me.services.find((item) => item.service_id === id) : null;
+          setEffectiveRole(match?.role || "observer");
+        }
       } catch {
         if (!cancelled) setStatus("Не удалось загрузить сервис.");
       }
@@ -84,19 +92,24 @@ export function ServicePage() {
           </section>
           <section className="profile-card">
             <h2>Modules</h2>
+            <p className="status">Роль: {effectiveRole}</p>
             <div className="modules-grid">
               <article className="module-card">
                 <h3>Contracts</h3>
                 <p className="status">Просмотр контрактов сервиса.</p>
               </article>
-              <article className="module-card">
-                <h3>Metrics</h3>
-                <p className="status">Метрики из Grafana.</p>
-              </article>
-              <article className="module-card">
-                <h3>Logs</h3>
-                <p className="status">История и поток логов.</p>
-              </article>
+              {String(effectiveRole).toLowerCase() !== "observer" && (
+                <>
+                  <article className="module-card">
+                    <h3>Metrics</h3>
+                    <p className="status">Метрики из Grafana.</p>
+                  </article>
+                  <article className="module-card">
+                    <h3>Logs</h3>
+                    <p className="status">История и поток логов.</p>
+                  </article>
+                </>
+              )}
             </div>
           </section>
         </section>
