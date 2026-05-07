@@ -1,25 +1,16 @@
 package contracts
 
 import (
-	"context"
 	"errors"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/mams/backend/internal/githubclient"
 	authmw "github.com/mams/backend/internal/middleware/auth"
-	"github.com/mams/backend/internal/models"
 	"github.com/mams/backend/internal/protoparser"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
 	"github.com/mams/backend/internal/utils"
 )
-
-type ServiceReader interface {
-	GetByID(ctx context.Context, id uuid.UUID) (models.Service, error)
-}
-type ProtoReader interface {
-	ReadProjectProto(ctx context.Context, repositoryURL, ref string) ([]byte, error)
-}
 
 type Handler struct {
 	services ServiceReader
@@ -78,4 +69,3 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		"methods":      parsed.Methods,
 	})
 }
-

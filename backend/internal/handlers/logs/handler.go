@@ -1,7 +1,6 @@
 package logs
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -16,11 +15,6 @@ import (
 	"github.com/mams/backend/internal/utils"
 	"github.com/mams/backend/internal/ws"
 )
-
-type Reader interface {
-	ListByService(ctx context.Context, serviceID uuid.UUID, filter models.LogFilter) ([]models.LogEntry, error)
-	Append(ctx context.Context, serviceID uuid.UUID, env, level, message string) *models.LogEntry
-}
 
 type Handler struct {
 	logs  Reader

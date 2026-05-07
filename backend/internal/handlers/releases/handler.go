@@ -12,14 +12,6 @@ import (
 	"github.com/mams/backend/internal/utils"
 )
 
-type ServiceReader interface {
-	GetByID(ctx context.Context, id uuid.UUID) (models.Service, error)
-}
-type ReleaseReader interface {
-	ListByService(ctx context.Context, serviceID uuid.UUID) ([]models.Release, error)
-	Create(ctx context.Context, rel models.Release) (models.Release, error)
-}
-
 type Handler struct {
 	services ServiceReader
 	releases ReleaseReader

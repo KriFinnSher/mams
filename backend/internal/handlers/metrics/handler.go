@@ -1,21 +1,15 @@
 package metrics
 
 import (
-	"context"
 	"errors"
 	"net/http"
 	"strings"
 
 	"github.com/google/uuid"
 	authmw "github.com/mams/backend/internal/middleware/auth"
-	"github.com/mams/backend/internal/models"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
 	"github.com/mams/backend/internal/utils"
 )
-
-type ServiceReader interface {
-	GetByID(ctx context.Context, id uuid.UUID) (models.Service, error)
-}
 
 type Handler struct {
 	services   ServiceReader
@@ -65,4 +59,3 @@ func buildGrafanaEmbedURL(baseURL, uid string) string {
 	}
 	return baseURL + "/d/" + uid + "?kiosk"
 }
-
