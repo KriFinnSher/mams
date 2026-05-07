@@ -54,7 +54,15 @@ export function ServicePage() {
               </>
             )}
           </section>
-          <section className="profile-card"><h2>Release</h2><p className="status">Заполняется на следующих задачах.</p></section>
+          <section className="profile-card">
+            <h2>Release</h2>
+            <form className="inline-form">
+              <label>Стратегия<select defaultValue="rolling"><option value="rolling">rolling</option><option value="recreate">recreate</option><option value="canary">canary</option></select></label>
+              <label>Окружение<select defaultValue="dev"><option value="dev">dev</option><option value="staging">staging</option><option value="prod">prod</option></select></label>
+              <label>Ветка<input type="text" defaultValue={svc?.default_branch || "main"} /></label>
+              <button type="button">Запустить деплой</button>
+            </form>
+          </section>
           <section className="profile-card"><h2>Versions history</h2><p className="status">Заполняется на следующих задачах.</p></section>
           <section className="profile-card"><h2>Modules</h2><p className="status">Заполняется на следующих задачах.</p></section>
         </section>
