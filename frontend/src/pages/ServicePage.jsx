@@ -319,7 +319,15 @@ export function ServicePage() {
                   <button type="button" className={releaseMode === "deploy" ? "mode-btn active" : "mode-btn"} onClick={() => setReleaseMode("deploy")}>Deploy</button>
                   <button type="button" className={releaseMode === "rollback" ? "mode-btn active" : "mode-btn"} onClick={() => setReleaseMode("rollback")}>Rollback</button>
                 </div>
-                <button type="button" disabled={Boolean(svc?.minimum_test_coverage_enabled && Number(svc?.test_coverage) < Number(svc?.minimum_test_coverage))} onClick={async () => {
+                <button
+                  type="button"
+                  disabled={Boolean(svc?.minimum_test_coverage_enabled && Number(svc?.test_coverage) < Number(svc?.minimum_test_coverage))}
+                  title={
+                    svc?.minimum_test_coverage_enabled && Number(svc?.test_coverage) < Number(svc?.minimum_test_coverage)
+                      ? `Релиз заблокирован: текущее покрытие (${svc?.test_coverage}%) ниже минимального порога (${svc?.minimum_test_coverage}%).`
+                      : ""
+                  }
+                  onClick={async () => {
                   const token = localStorage.getItem("mams_token");
                   if (!token) return setReleaseStatus("Ошибка авторизации.");
                   try {
@@ -354,11 +362,6 @@ export function ServicePage() {
                 }}>
                   {releaseMode === "rollback" ? "Запустить rollback" : "Запустить деплой"}
                 </button>
-                {svc?.minimum_test_coverage_enabled && Number(svc?.test_coverage) < Number(svc?.minimum_test_coverage) && (
-                  <p className="status">
-                    Релиз заблокирован: текущее покрытие ({svc?.test_coverage}%) ниже минимального порога ({svc?.minimum_test_coverage}%).
-                  </p>
-                )}
                 <p className="status">{releaseStatus}</p>
               </form>
               )}
