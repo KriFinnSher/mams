@@ -17,6 +17,7 @@ type ServiceReader interface {
 }
 type ReleaseReader interface {
 	ListByService(ctx context.Context, serviceID uuid.UUID) ([]models.Release, error)
+	Create(ctx context.Context, rel models.Release) (models.Release, error)
 }
 
 type Handler struct {
@@ -26,6 +27,23 @@ type Handler struct {
 
 func NewHandler(services ServiceReader, releases ReleaseReader) *Handler {
 	return &Handler{services: services, releases: releases}
+}
+
+func (h *Handler) CreatePending(
+	ctx context.Context,
+	serviceID, authorUserID uuid.UUID,
+	gitTag, branch, environment, strategy, description string,
+) (models.Release, error) {
+	return h.releases.Create(ctx, models.Release{
+		ServiceID:    serviceID,
+		GitTag:       gitTag,
+		Branch:       branch,
+		Environment:  environment,
+		Strategy:     strategy,
+		Status:       "pending",
+		Description:  description,
+		AuthorUserID: authorUserID,
+	})
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
@@ -74,4 +92,3 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	}
 	utils.WriteJSON(w, http.StatusOK, map[string]any{"releases": resp})
 }
-

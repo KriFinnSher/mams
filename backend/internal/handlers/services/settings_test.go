@@ -17,7 +17,6 @@ import (
 	authmw "github.com/mams/backend/internal/middleware/auth"
 	"github.com/mams/backend/internal/models"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
-	"github.com/mams/backend/internal/ws"
 	"go.uber.org/mock/gomock"
 )
 
@@ -115,7 +114,7 @@ func TestHandlerUpdateSettings(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			m := mocks.NewMockServiceReader(ctrl)
-			h := NewHandler(m, nil, nil, nil, ws.NewHub(), logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
+			h := NewHandler(m, logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
 			req := tt.setup(m)
 			b, _ := json.Marshal(tt.body)
 			req.Body = io.NopCloser(bytes.NewReader(b))
@@ -166,7 +165,7 @@ func TestHandlerGetSettings(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctrl := gomock.NewController(t)
 			m := mocks.NewMockServiceReader(ctrl)
-			h := NewHandler(m, nil, nil, nil, ws.NewHub(), logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
+			h := NewHandler(m, logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
 			req := tt.setup(m)
 			rec := httptest.NewRecorder()
 			h.GetSettings(rec, req)

@@ -16,7 +16,6 @@ import (
 	"github.com/mams/backend/internal/logx"
 	authmw "github.com/mams/backend/internal/middleware/auth"
 	"github.com/mams/backend/internal/models"
-	"github.com/mams/backend/internal/ws"
 	"go.uber.org/mock/gomock"
 )
 
@@ -117,7 +116,7 @@ func TestHandlerCreate(t *testing.T) {
 
 			ctrl := gomock.NewController(t)
 			reader := mocks.NewMockServiceReader(ctrl)
-			h := NewHandler(reader, nil, nil, nil, ws.NewHub(), logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
+			h := NewHandler(reader, logx.New(slog.New(slog.NewTextHandler(io.Discard, nil))))
 			req := tt.setup(reader)
 			rec := httptest.NewRecorder()
 

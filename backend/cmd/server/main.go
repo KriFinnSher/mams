@@ -79,7 +79,7 @@ func main() {
 	logger := logx.New(slog.Default())
 	hub := ws.NewHub()
 	login := authhandler.NewLoginHandler(profile, issuer, logger)
-	servicesH := serviceshandler.NewHandler(services, logsRepo, ghClient, releasesRepo, hub, logger)
+	servicesH := serviceshandler.NewHandler(services, logger)
 	logsH := logshandler.NewHandler(logsRepo, hub, logger)
 	metricsH := metricshandler.NewHandler(services, cfg.GrafanaURL)
 	contractsH := contractshandler.NewHandler(services, ghClient)
