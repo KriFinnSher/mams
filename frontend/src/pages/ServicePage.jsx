@@ -26,6 +26,8 @@ export function ServicePage() {
   const [releaseMode, setReleaseMode] = useState("deploy");
   const [rollbackTag, setRollbackTag] = useState("");
   const [releaseStatus, setReleaseStatus] = useState("");
+  const [releases, setReleases] = useState([]);
+  const [releasesStatus, setReleasesStatus] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +88,29 @@ export function ServicePage() {
     loadLogs();
     return () => { cancelled = true; };
   }, [id, moduleTab, logLevel, logText, logFrom, logTo]);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadReleases() {
+      const token = localStorage.getItem("mams_token");
+      if (!token) return;
+      try {
+        const resp = await fetch(`/api/services/${id}/releases`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!resp.ok) return setReleasesStatus("История релизов недоступна.");
+        const data = await resp.json();
+        if (cancelled) return;
+        const list = Array.isArray(data?.releases) ? data.releases : Array.isArray(data) ? data : [];
+        list.sort((a, b) => new Date(b.deployed_at || b.date || 0) - new Date(a.deployed_at || a.date || 0));
+        setReleases(list);
+      } catch {
+        if (!cancelled) setReleasesStatus("История релизов недоступна.");
+      }
+    }
+    loadReleases();
+    return () => { cancelled = true; };
+  }, [id]);
 
   useEffect(() => {
     if (moduleTab !== "logs" || String(effectiveRole).toLowerCase() === "observer") return;
@@ -205,20 +230,36 @@ export function ServicePage() {
             </section>
             <section className="profile-card">
               <h2>История версий</h2>
+              {releasesStatus && <p className="status">{releasesStatus}</p>}
               <table className="history-table">
                 <thead>
                   <tr>
-                    <th>Дата</th>
-                    <th>Окружение</th>
-                    <th>Стратегия</th>
-                    <th>Версия</th>
-                    <th>Статус</th>
+                    <th>Git tag</th>
+                    <th>Branch</th>
+                    <th>Strategy</th>
+                    <th>Environment</th>
+                    <th>Author</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th>Description</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td colSpan="5" className="status">История релизов пока пуста.</td>
-                  </tr>
+                  {releases.length === 0 && (
+                    <tr><td colSpan="8" className="status">История релизов пока пуста.</td></tr>
+                  )}
+                  {releases.map((r, idx) => (
+                    <tr key={`${r.id || "r"}-${idx}`}>
+                      <td>{r.git_tag || "-"}</td>
+                      <td>{r.branch || "-"}</td>
+                      <td>{r.strategy || "-"}</td>
+                      <td>{r.environment || "-"}</td>
+                      <td>{r.author || r.author_user_id || "-"}</td>
+                      <td>{r.status || "-"}</td>
+                      <td>{r.deployed_at || r.date || "-"}</td>
+                      <td>{r.description || "-"}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </section>
@@ -226,6 +267,10 @@ export function ServicePage() {
           <div className="overview-col">
             <section className="profile-card">
               <h2>Релиз</h2>
+              {String(effectiveRole).toLowerCase() === "observer" && (
+                <p className="status">У вас нет прав на управление релизами.</p>
+              )}
+              {String(effectiveRole).toLowerCase() !== "observer" && (
               <form className="inline-form">
                 <label>
                   Стратегия
@@ -274,7 +319,7 @@ export function ServicePage() {
                   <button type="button" className={releaseMode === "deploy" ? "mode-btn active" : "mode-btn"} onClick={() => setReleaseMode("deploy")}>Deploy</button>
                   <button type="button" className={releaseMode === "rollback" ? "mode-btn active" : "mode-btn"} onClick={() => setReleaseMode("rollback")}>Rollback</button>
                 </div>
-                <button type="button" onClick={async () => {
+                <button type="button" disabled={Boolean(svc?.minimum_test_coverage_enabled && Number(svc?.test_coverage) < Number(svc?.minimum_test_coverage))} onClick={async () => {
                   const token = localStorage.getItem("mams_token");
                   if (!token) return setReleaseStatus("Ошибка авторизации.");
                   try {
@@ -309,8 +354,14 @@ export function ServicePage() {
                 }}>
                   {releaseMode === "rollback" ? "Запустить rollback" : "Запустить деплой"}
                 </button>
+                {svc?.minimum_test_coverage_enabled && Number(svc?.test_coverage) < Number(svc?.minimum_test_coverage) && (
+                  <p className="status">
+                    Релиз заблокирован: текущее покрытие ({svc?.test_coverage}%) ниже минимального порога ({svc?.minimum_test_coverage}%).
+                  </p>
+                )}
                 <p className="status">{releaseStatus}</p>
               </form>
+              )}
             </section>
             <section className="profile-card">
               <h2>Модули</h2>
