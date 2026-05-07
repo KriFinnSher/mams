@@ -40,6 +40,7 @@ export function ServicePage() {
   const [settingsEnabled, setSettingsEnabled] = useState(false);
   const [settingsMinCoverage, setSettingsMinCoverage] = useState(0);
   const [settingsStatus, setSettingsStatus] = useState("");
+  const [isEditingSettings, setIsEditingSettings] = useState(false);
   const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
@@ -487,55 +488,88 @@ export function ServicePage() {
           {isObserver ? (
             <p className="status">Вкладка недоступна для роли observer.</p>
           ) : (
-            <form className="inline-form" onSubmit={async (event) => {
-              event.preventDefault();
-              if (!isOwner) return setSettingsStatus("Изменение owner-only настроек доступно только Service Owner.");
-              const token = localStorage.getItem("mams_token");
-              if (!token) return setSettingsStatus("Ошибка авторизации.");
-              try {
-                const payload = {
-                  settings: {
-                    minimum_test_coverage_enabled: settingsEnabled,
-                    minimum_test_coverage: Number(settingsMinCoverage),
-                  },
-                };
-                const resp = await fetch(`/api/services/${id}/settings`, {
-                  method: "PUT",
-                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-                  body: JSON.stringify(payload),
-                });
-                if (!resp.ok) return setSettingsStatus("Не удалось сохранить настройки.");
-                setSettingsStatus("Настройки сохранены.");
-              } catch {
-                setSettingsStatus("Не удалось сохранить настройки.");
-              }
-            }}>
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={settingsEnabled}
+            <>
+              <div className="settings-view">
+                <p><strong>Минимальный порог включен:</strong> {settingsEnabled ? "да" : "нет"}</p>
+                <p><strong>Минимальный порог покрытия:</strong> {settingsMinCoverage}%</p>
+              </div>
+              {!isEditingSettings && (
+                <button
+                  type="button"
+                  className="edit-btn"
                   disabled={isDeveloper}
-                  onChange={(e) => setSettingsEnabled(e.target.checked)}
-                />
-                Задать минимальный порог покрытия
-              </label>
-              <label>
-                Минимальный порог покрытия (%)
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={settingsMinCoverage}
-                  disabled={!settingsEnabled || isDeveloper}
-                  onChange={(e) => setSettingsMinCoverage(Number(e.target.value || 0))}
-                />
-              </label>
+                  onClick={() => {
+                    setSettingsStatus("");
+                    setIsEditingSettings(true);
+                  }}
+                >
+                  Редактировать
+                </button>
+              )}
               {isDeveloper && (
                 <p className="status">Режим только чтение: owner-only настройки может менять только Service Owner.</p>
               )}
-              <button type="submit" disabled={isDeveloper}>Сохранить настройки</button>
+              {isEditingSettings && (
+                <form className="inline-form settings-form" onSubmit={async (event) => {
+                  event.preventDefault();
+                  if (!isOwner) return setSettingsStatus("Изменение owner-only настроек доступно только Service Owner.");
+                  const token = localStorage.getItem("mams_token");
+                  if (!token) return setSettingsStatus("Ошибка авторизации.");
+                  try {
+                    const payload = {
+                      settings: {
+                        minimum_test_coverage_enabled: settingsEnabled,
+                        minimum_test_coverage: Number(settingsMinCoverage),
+                      },
+                    };
+                    const resp = await fetch(`/api/services/${id}/settings`, {
+                      method: "PUT",
+                      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+                      body: JSON.stringify(payload),
+                    });
+                    if (!resp.ok) return setSettingsStatus("Не удалось сохранить настройки.");
+                    setSettingsStatus("Настройки сохранены.");
+                    setIsEditingSettings(false);
+                  } catch {
+                    setSettingsStatus("Не удалось сохранить настройки.");
+                  }
+                }}>
+                  <label className="checkbox-row">
+                    <input
+                      type="checkbox"
+                      checked={settingsEnabled}
+                      onChange={(e) => setSettingsEnabled(e.target.checked)}
+                    />
+                    Задать минимальный порог покрытия
+                  </label>
+                  <label>
+                    Минимальный порог покрытия (%)
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={settingsMinCoverage}
+                      disabled={!settingsEnabled}
+                      onChange={(e) => setSettingsMinCoverage(Number(e.target.value || 0))}
+                    />
+                  </label>
+                  <div className="inline-actions">
+                    <button type="submit">Сохранить настройки</button>
+                    <button
+                      type="button"
+                      className="ghost-btn"
+                      onClick={() => {
+                        setSettingsStatus("");
+                        setIsEditingSettings(false);
+                      }}
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </form>
+              )}
               <p className="status">{settingsStatus}</p>
-            </form>
+            </>
           )}
         </section>
       )}
