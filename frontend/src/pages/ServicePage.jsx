@@ -54,12 +54,20 @@ export function ServicePage() {
             <h2>Service information</h2>
             {status && <p className="status">{status}</p>}
             {svc && (
-              <>
-                <p>Название: {svc.name || "-"}</p>
-                <p>Тип: {svc.type || "-"}</p>
-                <p>Версия: {svc.version || "-"}</p>
-                <p>Описание: {svc.description || "-"}</p>
-              </>
+              <dl className="info-grid">
+                <dt>Название</dt><dd>{svc.name || "-"}</dd>
+                <dt>Тип</dt><dd>{svc.type || "-"}</dd>
+                <dt>Версия</dt><dd>{svc.version || "-"}</dd>
+                <dt>Описание</dt><dd>{svc.description || "-"}</dd>
+                <dt>Покрытие тестами</dt><dd>{svc.test_coverage ?? "-"}%</dd>
+                <dt>Минимальное покрытие</dt><dd>{svc.minimum_test_coverage_enabled ? `${svc.minimum_test_coverage}%` : "выключено"}</dd>
+                <dt>PII sensitive</dt><dd>{svc.pii_sensitive ? "да" : "нет"}</dd>
+                <dt>Команда</dt><dd>{svc.responsible_team_ref || "-"}</dd>
+                <dt>Важность</dt><dd>{svc.importance || "-"}</dd>
+                <dt>Репозиторий</dt><dd>{svc.repository_url || "-"}</dd>
+                <dt>Ветка по умолчанию</dt><dd>{svc.default_branch || "-"}</dd>
+                <dt>Grafana UID</dt><dd>{svc.grafana_dashboard_uid || "-"}</dd>
+              </dl>
             )}
           </section>
           <section className="profile-card">
