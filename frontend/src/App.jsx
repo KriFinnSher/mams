@@ -1,4 +1,4 @@
-import { Link, Navigate, Outlet, Route, Routes, useParams } from "react-router-dom";
+import { Link, Navigate, Outlet, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import "./styles.css";
 
@@ -164,6 +164,57 @@ function ServiceListCard({ service }) {
 }
 
 function NewServicePage() {
+  const [status, setStatus] = useState("");
+  const nav = useNavigate();
+
+  async function onSubmit(event) {
+    event.preventDefault();
+    const token = localStorage.getItem("mams_token");
+    if (!token) {
+      setStatus("Ошибка авторизации.");
+      return;
+    }
+
+    const form = new FormData(event.currentTarget);
+    const payload = {
+      name: String(form.get("name") || ""),
+      description: String(form.get("description") || ""),
+      type: String(form.get("type") || ""),
+      test_coverage: Number(form.get("test_coverage") || 0),
+      minimum_test_coverage_enabled: Boolean(form.get("minimum_test_coverage_enabled")),
+      minimum_test_coverage: Number(form.get("minimum_test_coverage") || 0),
+      pii_sensitive: Boolean(form.get("pii_sensitive")),
+      responsible_team_ref: String(form.get("responsible_team_ref") || ""),
+      importance: String(form.get("importance") || ""),
+      repository_url: String(form.get("repository_url") || ""),
+      default_branch: String(form.get("default_branch") || ""),
+      grafana_dashboard_uid: String(form.get("grafana_dashboard_uid") || ""),
+    };
+
+    setStatus("Создание сервиса...");
+
+    try {
+      const response = await fetch("/api/services", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        setStatus("Не удалось создать сервис.");
+        return;
+      }
+
+      setStatus("Сервис создан.");
+      nav("/services");
+    } catch {
+      setStatus("Не удалось создать сервис.");
+    }
+  }
+
   return (
     <main className="page">
       <h1>Добавление сервиса</h1>
@@ -174,7 +225,7 @@ function NewServicePage() {
         <Link to="/services/new">Новый сервис</Link>
         <Link to="/profile">Профиль</Link>
       </nav>
-      <form className="service-form">
+      <form className="service-form" onSubmit={onSubmit}>
         <label>
           Название
           <input name="name" type="text" required />
@@ -233,6 +284,7 @@ function NewServicePage() {
         </label>
         <button type="submit">Создать сервис</button>
       </form>
+      <p className="status">{status}</p>
     </main>
   );
 }
