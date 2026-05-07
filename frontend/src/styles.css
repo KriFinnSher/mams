@@ -72,3 +72,18 @@ h1 {
   margin-top: 10px;
   color: #5f6b7a;
 }
+
+.services-list {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 8px;
+}
+
+.services-item {
+  background: #fff;
+  border: 1px solid #d6dce3;
+  border-radius: 10px;
+  padding: 12px;
+}

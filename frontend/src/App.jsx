@@ -1,5 +1,5 @@
 import { Link, Navigate, Outlet, Route, Routes, useParams } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./styles.css";
 
 function Layout({ title }) {
@@ -79,7 +79,72 @@ function LoginPage() {
 }
 
 function ServicesPage() {
-  return <Layout title="Список сервисов" />;
+  const [items, setItems] = useState([]);
+  const [status, setStatus] = useState("Загрузка...");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      const token = localStorage.getItem("mams_token");
+      if (!token) {
+        setStatus("Ошибка авторизации.");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/services", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) {
+          setStatus("Не удалось загрузить сервисы.");
+          return;
+        }
+
+        const data = await response.json();
+        const list = Array.isArray(data) ? data : Array.isArray(data.services) ? data.services : [];
+        if (cancelled) {
+          return;
+        }
+
+        setItems(list);
+        setStatus(list.length === 0 ? "Сервисы не найдены." : "");
+      } catch {
+        if (!cancelled) {
+          setStatus("Не удалось загрузить сервисы.");
+        }
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <main className="page">
+      <h1>Список сервисов</h1>
+      <nav className="nav">
+        <Link to="/login">Логин</Link>
+        <Link to="/services">Сервисы</Link>
+        <Link to="/services/new">Новый сервис</Link>
+        <Link to="/profile">Профиль</Link>
+      </nav>
+      {status && <p className="status">{status}</p>}
+      {items.length > 0 && (
+        <ul className="services-list">
+          {items.map((item) => (
+            <li key={item.id} className="services-item">
+              <Link to={`/services/${item.id}`}>{item.name || item.id}</Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </main>
+  );
 }
 
 function NewServicePage() {
