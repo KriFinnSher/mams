@@ -63,7 +63,25 @@ export function ServicePage() {
               <button type="button">Запустить деплой</button>
             </form>
           </section>
-          <section className="profile-card"><h2>Versions history</h2><p className="status">Заполняется на следующих задачах.</p></section>
+          <section className="profile-card">
+            <h2>Versions history</h2>
+            <table className="history-table">
+              <thead>
+                <tr>
+                  <th>Дата</th>
+                  <th>Окружение</th>
+                  <th>Стратегия</th>
+                  <th>Версия</th>
+                  <th>Статус</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan="5" className="status">История релизов пока пуста.</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
           <section className="profile-card"><h2>Modules</h2><p className="status">Заполняется на следующих задачах.</p></section>
         </section>
       )}

@@ -247,3 +247,15 @@ h1 {
   color: #fff;
   cursor: pointer;
 }
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history-table th,
+.history-table td {
+  text-align: left;
+  border-bottom: 1px solid #e4e9ef;
+  padding: 8px 6px;
+}
