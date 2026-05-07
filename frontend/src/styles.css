@@ -447,7 +447,7 @@ h1 {
   background: #1f2937;
 }
 
-.has-tooltip:hover .release-tooltip {
+.release-btn-disabled:hover + .release-tooltip {
   opacity: 1;
   transform: translate(-50%, 0);
 }
