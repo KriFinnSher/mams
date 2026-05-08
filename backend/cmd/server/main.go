@@ -16,13 +16,13 @@ import (
 	"github.com/mams/backend/internal/bootstrap"
 	"github.com/mams/backend/internal/config"
 	"github.com/mams/backend/internal/githubclient"
-	"github.com/mams/backend/internal/kubeclient"
 	authhandler "github.com/mams/backend/internal/handlers/auth"
 	contractshandler "github.com/mams/backend/internal/handlers/contracts"
 	logshandler "github.com/mams/backend/internal/handlers/logs"
 	metricshandler "github.com/mams/backend/internal/handlers/metrics"
 	releaseshandler "github.com/mams/backend/internal/handlers/releases"
 	serviceshandler "github.com/mams/backend/internal/handlers/services"
+	"github.com/mams/backend/internal/kubeclient"
 	"github.com/mams/backend/internal/logx"
 	authmw "github.com/mams/backend/internal/middleware/auth"
 	rbacmw "github.com/mams/backend/internal/middleware/rbac"
@@ -30,11 +30,10 @@ import (
 	mongorepo "github.com/mams/backend/internal/repository/mongo"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
 	"github.com/mams/backend/internal/ws"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/fake"
-	"k8s.io/client-go/tools/clientcmd"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 func main() {
@@ -87,18 +86,16 @@ func main() {
 	logsH := logshandler.NewHandler(logsRepo, hub, logger)
 	metricsH := metricshandler.NewHandler(services, cfg.GrafanaURL)
 	contractsH := contractshandler.NewHandler(services, ghClient)
-	kubeSet := kubernetes.Interface(fake.NewSimpleClientset())
-	if cfg.KubeConfigPath != "" {
-		if restCfg, cfgErr := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath); cfgErr != nil {
-			log.Printf("kubeconfig load failed, fallback to fake client: %v", cfgErr)
-		} else {
-			realSet, clientErr := kubernetes.NewForConfig(restCfg)
-			if clientErr != nil {
-				log.Printf("kubernetes client init failed, fallback to fake client: %v", clientErr)
-			} else {
-				kubeSet = realSet
-			}
-		}
+	if cfg.KubeConfigPath == "" {
+		log.Fatal("KUBE_CONFIG_PATH is required")
+	}
+	restCfg, err := clientcmd.BuildConfigFromFlags("", cfg.KubeConfigPath)
+	if err != nil {
+		log.Fatalf("load kubeconfig: %v", err)
+	}
+	kubeSet, err := kubernetes.NewForConfig(restCfg)
+	if err != nil {
+		log.Fatalf("create kubernetes client: %v", err)
 	}
 	kube := kubeclient.New(kubeSet)
 	releasesH := releaseshandler.NewHandler(services, releasesRepo, ghClient, kube)
