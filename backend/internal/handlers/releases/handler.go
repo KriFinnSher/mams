@@ -278,6 +278,7 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 			"dispatch workflow failed: service_id=%s repo=%s workflow=%s ref=%s env=%s strategy=%s err=%v",
 			svc.ID.String(), svc.RepositoryURL, "deploy.yml", ref, req.Environment, req.Strategy, err,
 		)
+		log.Printf("dispatch workflow error details: %+v", err)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to dispatch workflow")
 		return
 	}
