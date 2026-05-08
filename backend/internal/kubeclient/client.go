@@ -71,6 +71,104 @@ func (c *Client) UpgradeRolling(ctx context.Context, namespace, name, container,
 	return err
 }
 
+func (c *Client) UpgradeRecreate(ctx context.Context, namespace, name, container, image string) error {
+	if c == nil || c.kube == nil {
+		return fmt.Errorf("kubernetes client is not configured")
+	}
+	dep, err := c.kube.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	if len(dep.Spec.Template.Spec.Containers) == 0 {
+		return fmt.Errorf("deployment has no containers")
+	}
+	updated := false
+	for i := range dep.Spec.Template.Spec.Containers {
+		if dep.Spec.Template.Spec.Containers[i].Name != container {
+			continue
+		}
+		dep.Spec.Template.Spec.Containers[i].Image = image
+		updated = true
+		break
+	}
+	if !updated {
+		return fmt.Errorf("container %q not found", container)
+	}
+	dep.Spec.Strategy.Type = appsv1.RecreateDeploymentStrategyType
+	_, err = c.kube.AppsV1().Deployments(namespace).Update(ctx, dep, metav1.UpdateOptions{})
+	return err
+}
+
+func (c *Client) ApplyStablePatch(ctx context.Context, namespace, name, container, image string) error {
+	return c.UpgradeRolling(ctx, namespace, name, container, image)
+}
+
+func (c *Client) ApplyCanaryPatch(ctx context.Context, namespace, name, canaryName, container, image string, replicas int32) error {
+	if c == nil || c.kube == nil {
+		return fmt.Errorf("kubernetes client is not configured")
+	}
+	stable, err := c.kube.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	canary, err := c.kube.AppsV1().Deployments(namespace).Get(ctx, canaryName, metav1.GetOptions{})
+	if err == nil {
+		if len(canary.Spec.Template.Spec.Containers) == 0 {
+			return fmt.Errorf("canary deployment has no containers")
+		}
+		updated := false
+		for i := range canary.Spec.Template.Spec.Containers {
+			if canary.Spec.Template.Spec.Containers[i].Name != container {
+				continue
+			}
+			canary.Spec.Template.Spec.Containers[i].Image = image
+			updated = true
+			break
+		}
+		if !updated {
+			return fmt.Errorf("container %q not found", container)
+		}
+		canary.Spec.Replicas = &replicas
+		_, err = c.kube.AppsV1().Deployments(namespace).Update(ctx, canary, metav1.UpdateOptions{})
+		return err
+	}
+
+	newDep := stable.DeepCopy()
+	newDep.ResourceVersion = ""
+	newDep.UID = ""
+	newDep.Name = canaryName
+	if newDep.Labels == nil {
+		newDep.Labels = map[string]string{}
+	}
+	newDep.Labels["track"] = "canary"
+	if newDep.Spec.Template.Labels == nil {
+		newDep.Spec.Template.Labels = map[string]string{}
+	}
+	newDep.Spec.Template.Labels["track"] = "canary"
+	newDep.Spec.Replicas = &replicas
+	if len(newDep.Spec.Template.Spec.Containers) == 0 {
+		return fmt.Errorf("stable deployment has no containers")
+	}
+	updated := false
+	for i := range newDep.Spec.Template.Spec.Containers {
+		if newDep.Spec.Template.Spec.Containers[i].Name != container {
+			continue
+		}
+		newDep.Spec.Template.Spec.Containers[i].Image = image
+		updated = true
+		break
+	}
+	if !updated {
+		return fmt.Errorf("container %q not found", container)
+	}
+	_, err = c.kube.AppsV1().Deployments(namespace).Create(ctx, newDep, metav1.CreateOptions{})
+	return err
+}
+
+func (c *Client) RollbackToTag(ctx context.Context, namespace, name, container, image string) error {
+	return c.UpgradeRolling(ctx, namespace, name, container, image)
+}
+
 func toDeploymentStatus(dep *appsv1.Deployment) DeploymentStatus {
 	return DeploymentStatus{
 		Namespace:           dep.Namespace,
