@@ -53,7 +53,17 @@ func (h *Handler) MarkResult(ctx context.Context, releaseID uuid.UUID, status st
 		return models.Release{}, fmt.Errorf("invalid current status: %s", current.Status)
 	}
 
-	return h.releases.UpdateStatus(ctx, releaseID, status)
+	updated, err := h.releases.UpdateStatus(ctx, releaseID, status)
+	if err != nil {
+		return models.Release{}, err
+	}
+	if status == "success" && updated.GitTag != "" {
+		if err := h.releases.UpdateServiceVersion(ctx, updated.ServiceID, updated.GitTag); err != nil {
+			return models.Release{}, err
+		}
+	}
+
+	return updated, nil
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {

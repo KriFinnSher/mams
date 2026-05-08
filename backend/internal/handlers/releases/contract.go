@@ -18,6 +18,7 @@ type ReleaseReader interface {
 	Create(ctx context.Context, rel models.Release) (models.Release, error)
 	GetByID(ctx context.Context, id uuid.UUID) (models.Release, error)
 	UpdateStatus(ctx context.Context, id uuid.UUID, status string) (models.Release, error)
+	UpdateServiceVersion(ctx context.Context, serviceID uuid.UUID, version string) error
 }
 
 type WorkflowDispatcher interface {

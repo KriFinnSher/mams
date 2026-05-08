@@ -126,6 +126,20 @@ func (mr *MockReleaseReaderMockRecorder) ListByService(ctx, serviceID any) *gomo
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByService", reflect.TypeOf((*MockReleaseReader)(nil).ListByService), ctx, serviceID)
 }
 
+// UpdateServiceVersion mocks base method.
+func (m *MockReleaseReader) UpdateServiceVersion(ctx context.Context, serviceID uuid.UUID, version string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateServiceVersion", ctx, serviceID, version)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateServiceVersion indicates an expected call of UpdateServiceVersion.
+func (mr *MockReleaseReaderMockRecorder) UpdateServiceVersion(ctx, serviceID, version any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateServiceVersion", reflect.TypeOf((*MockReleaseReader)(nil).UpdateServiceVersion), ctx, serviceID, version)
+}
+
 // UpdateStatus mocks base method.
 func (m *MockReleaseReader) UpdateStatus(ctx context.Context, id uuid.UUID, status string) (models.Release, error) {
 	m.ctrl.T.Helper()

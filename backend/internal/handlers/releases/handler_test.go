@@ -69,13 +69,32 @@ func TestMarkResult_Success(t *testing.T) {
 	rr := mocks.NewMockReleaseReader(ctrl)
 	rid := uuid.New()
 	rr.EXPECT().GetByID(gomock.Any(), rid).Return(models.Release{ID: rid, Status: "in_progress"}, nil)
-	rr.EXPECT().UpdateStatus(gomock.Any(), rid, "success").Return(models.Release{ID: rid, Status: "success"}, nil)
+	sid := uuid.New()
+	rr.EXPECT().UpdateStatus(gomock.Any(), rid, "success").Return(models.Release{ID: rid, ServiceID: sid, GitTag: "v1.2.3", Status: "success"}, nil)
+	rr.EXPECT().UpdateServiceVersion(gomock.Any(), sid, "v1.2.3").Return(nil)
 	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
 	got, err := h.MarkResult(context.Background(), rid, "success")
 	if err != nil {
 		t.Fatalf("err=%v", err)
 	}
 	if got.Status != "success" {
+		t.Fatalf("status=%s", got.Status)
+	}
+}
+
+func TestMarkResult_FailedDoesNotUpdateServiceVersion(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sr := mocks.NewMockServiceReader(ctrl)
+	rr := mocks.NewMockReleaseReader(ctrl)
+	rid := uuid.New()
+	rr.EXPECT().GetByID(gomock.Any(), rid).Return(models.Release{ID: rid, Status: "in_progress"}, nil)
+	rr.EXPECT().UpdateStatus(gomock.Any(), rid, "failed").Return(models.Release{ID: rid, Status: "failed"}, nil)
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	got, err := h.MarkResult(context.Background(), rid, "failed")
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if got.Status != "failed" {
 		t.Fatalf("status=%s", got.Status)
 	}
 }
