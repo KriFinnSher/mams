@@ -477,7 +477,7 @@ func extractRepoPath(repoURL string) string {
 	repoURL = strings.TrimSuffix(repoURL, ".git")
 	parts := strings.Split(repoURL, "/")
 	if len(parts) >= 2 {
-		return strings.Join(parts[len(parts)-2:], "/")
+		return strings.ToLower(strings.Join(parts[len(parts)-2:], "/"))
 	}
-	return repoURL
+	return strings.ToLower(repoURL)
 }
