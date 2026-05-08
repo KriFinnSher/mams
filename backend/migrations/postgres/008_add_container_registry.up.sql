@@ -1,0 +1,1 @@
+ALTER TABLE services ADD COLUMN container_registry VARCHAR(255) DEFAULT 'ghcr.io';

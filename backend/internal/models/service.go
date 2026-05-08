@@ -22,6 +22,7 @@ type Service struct {
 	ResponsibleTeamRef         string
 	Importance                 string
 	RepositoryURL              string
+	ContainerRegistry          string
 	DefaultBranch              string
 	GrafanaDashboardUID        string
 	Settings                   map[string]any

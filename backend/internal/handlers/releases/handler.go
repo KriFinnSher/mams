@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/google/uuid"
 	authmw "github.com/mams/backend/internal/middleware/auth"
@@ -393,14 +394,21 @@ func (h *Handler) applyKubeDeploy(ctx context.Context, svc models.Service, env, 
 	namespace := utils.BuildNamespace(slug, env)
 	deployment := svc.Name
 	container := "app"
-	imageRef := branch
+
+	imageRef := gitTag
 	if imageRef == "" {
-		imageRef = gitTag
+		imageRef = branch
 	}
 	if imageRef == "" {
 		imageRef = "latest"
 	}
-	image := svc.RepositoryURL + ":" + imageRef
+
+	registry := svc.ContainerRegistry
+	if registry == "" {
+		registry = "ghcr.io"
+	}
+	repo := extractRepoPath(svc.RepositoryURL)
+	image := registry + "/" + repo + ":" + imageRef
 
 	switch strategy {
 	case "recreate":
@@ -427,7 +435,14 @@ func (h *Handler) applyKubeRollback(ctx context.Context, svc models.Service, env
 	namespace := utils.BuildNamespace(slug, env)
 	deployment := svc.Name
 	container := "app"
-	image := svc.RepositoryURL + ":" + gitTag
+
+	registry := svc.ContainerRegistry
+	if registry == "" {
+		registry = "ghcr.io"
+	}
+	repo := extractRepoPath(svc.RepositoryURL)
+	image := registry + "/" + repo + ":" + gitTag
+
 	return h.kube.RollbackToTag(ctx, namespace, deployment, container, image)
 }
 
@@ -456,4 +471,13 @@ func (h *Handler) UpdateFromCI(w http.ResponseWriter, r *http.Request) {
 		"release_id": updated.ID.String(),
 		"status":     updated.Status,
 	})
+}
+
+func extractRepoPath(repoURL string) string {
+	repoURL = strings.TrimSuffix(repoURL, ".git")
+	parts := strings.Split(repoURL, "/")
+	if len(parts) >= 2 {
+		return strings.Join(parts[len(parts)-2:], "/")
+	}
+	return repoURL
 }
