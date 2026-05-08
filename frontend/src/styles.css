@@ -336,114 +336,6 @@ h1 {
   gap: 10px;
 }
 
-.contract-item {
-  border: 1px solid #d6dce3;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.contract-toggle {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  padding: 10px;
-  display: flex;
-  justify-content: space-between;
-  cursor: pointer;
-}
-
-.contract-body {
-  padding: 0 10px 10px;
-}
-
-.contract-params {
-  margin: 6px 0 0;
-  padding-left: 18px;
-}
-
-.contracts-pane {
-  height: 320px;
-  overflow: auto;
-  border: 1px solid #d6dce3;
-  border-radius: 8px;
-  background: #fff;
-}
-
-.contract-method {
-  border-bottom: 1px solid #e8edf4;
-}
-
-.contract-method:last-child {
-  border-bottom: 0;
-}
-
-.contract-method-head {
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 0 12px;
-}
-
-.contract-head-actions {
-  display: flex;
-  gap: 6px;
-}
-
-.contract-io-btn {
-  height: 28px;
-  border: 1px solid #d6dce3;
-  border-radius: 6px;
-  background: #fff;
-  color: #17212b;
-  padding: 0 10px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.contract-io-btn.active {
-  border-color: #0f62fe;
-  color: #0f62fe;
-}
-
-.contract-expand {
-  border-top: 1px solid #eef2f7;
-  background: #fbfdff;
-}
-
-.contract-expand-title {
-  padding: 8px 12px;
-  font-size: 12px;
-  color: #5f6b7a;
-}
-
-.contract-tree-row {
-  min-height: 34px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 8px;
-  border-top: 1px solid #eef2f7;
-  padding-right: 12px;
-}
-
-.contract-tree-name {
-  color: #17212b;
-}
-
-.contract-tree-type {
-  color: #5f6b7a;
-  font-size: 12px;
-}
-
-.contract-empty {
-  padding: 8px 12px 12px;
-  color: #5f6b7a;
-  font-size: 13px;
-}
-
 .tabs {
   margin-top: 10px;
   display: inline-flex;
@@ -753,12 +645,18 @@ h1 {
   margin: 0;
 }
 
+.metrics-card {
+  height: 360px;
+  overflow: hidden;
+}
+
 .metrics-frame {
   width: 100%;
-  height: 620px;
+  height: 100%;
   border: 1px solid #d6dce3;
   border-radius: 10px;
   background: #fff;
+  display: block;
 }
 
 @media (max-width: 1100px) {
@@ -2044,4 +1942,162 @@ h1 {
 .profile-role-badge.developer {
   background: #dbeafe;
   color: #1d4ed8;
+}
+
+.contracts-pane {
+  display: grid;
+  gap: 12px;
+
+  height: 320px;
+  max-height: 320px;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding: 10px 10px 14px;
+
+  border: 1px solid #d6dce3;
+  border-radius: 8px;
+  background: #fff;
+  align-content: start;
+}
+
+.contract-method-head {
+  min-height: 58px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  padding: 0 16px;
+
+  background:
+    linear-gradient(180deg,
+      #ffffff 0%,
+      #fbfdff 100%);
+}
+
+.contract-method-head strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: #17212b;
+}
+
+.contract-head-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.contract-io-btn {
+  height: 32px;
+
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+
+  background: #eff6ff;
+  color: #1d4ed8;
+
+  padding: 0 14px;
+
+  cursor: pointer;
+
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.contract-io-btn:hover {
+  transform: translateY(-1px);
+}
+
+.contract-io-btn.active {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #fff;
+}
+
+.contract-expand {
+  max-height: 140px;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  border-top: 1px solid #eef2f7;
+  background: #fbfcfe;
+}
+
+.contract-expand-title {
+  padding: 14px 16px 10px;
+
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+
+  color: #6b7280;
+}
+
+.contract-tree-row {
+  min-height: 40px;
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+
+  align-items: center;
+  gap: 12px;
+
+  padding-right: 16px;
+
+  border-top: 1px solid #f1f5f9;
+
+  transition: background 0.12s ease;
+}
+
+.contract-tree-row:hover {
+  background: #f8fbff;
+}
+
+.contract-tree-name {
+  font-size: 14px;
+  color: #17212b;
+}
+
+.contract-tree-type {
+  display: inline-flex;
+  align-items: center;
+
+  min-height: 24px;
+
+  padding: 0 10px;
+
+  border-radius: 999px;
+
+  background: #eef2ff;
+  color: #4338ca;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+.contract-empty {
+  padding: 0 16px 16px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.contract-method-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.contract-method-subtitle {
+  font-size: 12px;
+  color: #6b7280;
 }

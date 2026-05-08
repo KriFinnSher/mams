@@ -36,47 +36,54 @@ export function NavBar() {
   );
 }
 
-function normalizeContractMethod(method) {
-  const params = Array.isArray(method?.parameters)
-    ? method.parameters
-    : Array.isArray(method?.Parameters)
-      ? method.Parameters
-      : [];
+function normalizeParameters(rows) {
+  if (!Array.isArray(rows)) return [];
 
-  const outputParams = Array.isArray(method?.output_parameters)
-    ? method.output_parameters
-    : Array.isArray(method?.OutputParameters)
-      ? method.OutputParameters
-      : [];
+  return rows.map((p) => ({
+    name: p?.name ?? p?.Name ?? "",
+    type: p?.type ?? p?.Type ?? "",
+    repeated: Boolean(p?.repeated ?? p?.Repeated),
+    children: normalizeParameters(p?.children ?? p?.Children),
+  }));
+}
+
+function normalizeMessageSpec(value, fallbackName = "") {
+  if (typeof value === "string") {
+    return {
+      name: value,
+      parameters: [],
+    };
+  }
 
   return {
+    name: value?.name ?? value?.Name ?? fallbackName,
+    parameters: normalizeParameters(value?.parameters ?? value?.Parameters),
+  };
+}
+
+function normalizeContractMethod(method) {
+  return {
     name: method?.name ?? method?.Name ?? "",
-    input: method?.input ?? method?.Input ?? "",
-    output: method?.output ?? method?.Output ?? "",
-    parameters: params.map((p) => ({
-      name: p?.name ?? p?.Name ?? "",
-      type: p?.type ?? p?.Type ?? "",
-      children: Array.isArray(p?.children) ? p.children : [],
-    })),
-    output_parameters: outputParams.map((p) => ({
-      name: p?.name ?? p?.Name ?? "",
-      type: p?.type ?? p?.Type ?? "",
-      children: Array.isArray(p?.children) ? p.children : [],
-    })),
+    input: normalizeMessageSpec(method?.input ?? method?.Input),
+    output: normalizeMessageSpec(method?.output ?? method?.Output),
   };
 }
 
 function renderContractTree(rows, depth = 0) {
   if (!Array.isArray(rows) || rows.length === 0) return null;
+
   return rows.map((row, idx) => {
     const key = `${row?.name || "field"}-${idx}-${depth}`;
     const hasChildren = Array.isArray(row?.children) && row.children.length > 0;
+    const type = `${row?.repeated ? "repeated " : ""}${row?.type || "-"}`;
+
     return (
       <div key={key}>
         <div className="contract-tree-row" style={{ paddingLeft: `${12 + depth * 20}px` }}>
           <span className="contract-tree-name">{row?.name || "-"}</span>
-          <span className="contract-tree-type">{row?.type || "-"}</span>
+          <span className="contract-tree-type">{type}</span>
         </div>
+
         {hasChildren && renderContractTree(row.children, depth + 1)}
       </div>
     );
@@ -220,8 +227,9 @@ export function ServicePage() {
   const [contracts, setContracts] = useState([]);
   const [contractsStatus, setContractsStatus] = useState("");
   const [openContractPanels, setOpenContractPanels] = useState({});
-  const [metricsEmbedURL, setMetricsEmbedURL] = useState("");
-  const [metricsStatus, setMetricsStatus] = useState("");
+  const [metricsEmbedURL, setMetricsEmbedURL] = useState(
+    "http://localhost:3001/d/adjdh57/new-dashboard?orgId=1"
+  ); const [metricsStatus, setMetricsStatus] = useState("");
   const [releaseStrategy, setReleaseStrategy] = useState("rolling");
   const [releaseEnv, setReleaseEnv] = useState("dev");
   const [releaseBranch, setReleaseBranch] = useState("main");
@@ -339,8 +347,6 @@ export function ServicePage() {
         return;
       }
 
-      setLogsStatus("Загрузка логов...");
-
       try {
         const params = new URLSearchParams();
         params.set("limit", "100");
@@ -417,7 +423,6 @@ export function ServicePage() {
     async function loadContracts() {
       const token = localStorage.getItem("mams_token");
       if (!token) return setContractsStatus("Ошибка авторизации.");
-      setContractsStatus("Загрузка контрактов...");
       try {
         const resp = await fetch(`/api/services/${id}/contracts`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -441,30 +446,29 @@ export function ServicePage() {
     return () => { cancelled = true; };
   }, [id, moduleTab]);
 
-  useEffect(() => {
-    if (moduleTab !== "metrics" || isObserver) return;
-    let cancelled = false;
-    async function loadMetrics() {
-      const token = localStorage.getItem("mams_token");
-      if (!token) return setMetricsStatus("Ошибка авторизации.");
-      setMetricsStatus("Загрузка метрик...");
-      try {
-        const resp = await fetch(`/api/services/${id}/metrics`, {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: "no-store",
-        });
-        if (!resp.ok) return setMetricsStatus("Не удалось загрузить метрики.");
-        const data = await resp.json();
-        if (cancelled) return;
-        setMetricsEmbedURL(data?.embed_url || "");
-        setMetricsStatus(data?.embed_url ? "" : "Для сервиса не задан Grafana dashboard.");
-      } catch {
-        if (!cancelled) setMetricsStatus("Не удалось загрузить метрики.");
-      }
-    }
-    loadMetrics();
-    return () => { cancelled = true; };
-  }, [id, moduleTab, isObserver]);
+  // useEffect(() => {
+  //   if (moduleTab !== "metrics" || isObserver) return;
+  //   let cancelled = false;
+  //   async function loadMetrics() {
+  //     const token = localStorage.getItem("mams_token");
+  //     if (!token) return setMetricsStatus("Ошибка авторизации.");
+  //     try {
+  //       const resp = await fetch(`/api/services/${id}/metrics`, {
+  //         headers: { Authorization: `Bearer ${token}` },
+  //         cache: "no-store",
+  //       });
+  //       if (!resp.ok) return setMetricsStatus("Не удалось загрузить метрики.");
+  //       const data = await resp.json();
+  //       if (cancelled) return;
+  //       setMetricsEmbedURL(data?.embed_url || "");
+  //       setMetricsStatus(data?.embed_url ? "" : "Для сервиса не задан Grafana dashboard.");
+  //     } catch {
+  //       if (!cancelled) setMetricsStatus("Не удалось загрузить метрики.");
+  //     }
+  //   }
+  //   loadMetrics();
+  //   return () => { cancelled = true; };
+  // }, [id, moduleTab, isObserver]);
 
   useEffect(() => {
     let cancelled = false;
@@ -485,13 +489,10 @@ export function ServicePage() {
         if (activeReleaseID) {
           const current = list.find((item) => item.id === activeReleaseID);
           if (current?.status === "success") {
-            setReleaseStatus("Операция успешно завершена.");
             setActiveReleaseID("");
           } else if (current?.status === "failed") {
-            setReleaseStatus("Операция завершилась ошибкой.");
             setActiveReleaseID("");
           } else if (current?.status === "in_progress" || current?.status === "pending") {
-            setReleaseStatus(`Операция выполняется: ${current.status}.`);
           }
         }
       } catch {
@@ -931,7 +932,6 @@ export function ServicePage() {
                           if (!resp.ok) return setReleaseStatus("Не удалось запустить деплой.");
                           const data = await resp.json();
                           if (data?.release_id) setActiveReleaseID(data.release_id);
-                          return setReleaseStatus("Деплой запущен.");
                         } catch {
                           setReleaseStatus("Операция недоступна.");
                         }
@@ -968,7 +968,12 @@ export function ServicePage() {
                         return (
                           <div key={`${m.name || "m"}-${idx}`} className="contract-method">
                             <div className="contract-method-head">
-                              <strong>{m.name}</strong>
+                              <div className="contract-method-title">
+                                <strong>{m.name}</strong>
+                                <span className="contract-method-subtitle">
+                                  {m.input?.name || "Empty"} → {m.output?.name || "Empty"}
+                                </span>
+                              </div>
                               <div className="contract-head-actions">
                                 <button
                                   type="button"
@@ -998,27 +1003,27 @@ export function ServicePage() {
                             </div>
                             {inOpen && (
                               <div className="contract-expand">
-                                <div className="contract-expand-title">Вход: {m.input || "-"}</div>
-                                {Array.isArray(m.parameters) && m.parameters.length > 0 ? renderContractTree(m.parameters) : <div className="contract-empty">Параметры не указаны</div>}
+                                {Array.isArray(m.input?.parameters) && m.input.parameters.length > 0
+                                  ? renderContractTree(m.input.parameters)
+                                  : <div className="contract-empty">Параметры не указаны</div>}
                               </div>
                             )}
+
                             {outOpen && (
                               <div className="contract-expand">
-                                <div className="contract-expand-title">Выход: {m.output || "-"}</div>
-                                {Array.isArray(m.output_parameters) && m.output_parameters.length > 0 ? renderContractTree(m.output_parameters) : <div className="contract-empty">Поля ответа не указаны</div>}
+                                {Array.isArray(m.output?.parameters) && m.output.parameters.length > 0
+                                  ? renderContractTree(m.output.parameters)
+                                  : <div className="contract-empty">Поля ответа не указаны</div>}
                               </div>
                             )}
                           </div>
                         );
                       })}
                     </div>
-                    {contracts.length === 0 && !contractsStatus && (
-                      <div className="contract-empty">Контракты не найдены.</div>
-                    )}
                   </article>
                 )}
                 {moduleTab === "metrics" && !isObserver && (
-                  <article className="module-card">
+                  <article className="module-card metrics-card">
                     {metricsStatus && <p className="status">{metricsStatus}</p>}
                     {metricsEmbedURL && (
                       <iframe
