@@ -196,6 +196,13 @@ func main() {
 		}
 		logsH.Ingest(w, r)
 	})
+	mux.HandleFunc("/api/internal/releases/status", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		releasesH.UpdateFromCI(w, r)
+	})
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("ok"))
 	})

@@ -431,3 +431,40 @@ func TestRollback_RequiresGitTag(t *testing.T) {
 		t.Fatalf("status=%d", rec.Code)
 	}
 }
+
+func TestUpdateFromCI_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sr := mocks.NewMockServiceReader(ctrl)
+	rr := mocks.NewMockReleaseReader(ctrl)
+	rid := uuid.New()
+	sid := uuid.New()
+	rr.EXPECT().GetByID(gomock.Any(), rid).Return(models.Release{ID: rid, Status: "in_progress"}, nil)
+	rr.EXPECT().UpdateStatus(gomock.Any(), rid, "success").Return(models.Release{
+		ID: rid, ServiceID: sid, GitTag: "v1.0.0", Status: "success",
+	}, nil)
+	rr.EXPECT().UpdateServiceVersion(gomock.Any(), sid, "v1.0.0").Return(nil)
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	body, _ := json.Marshal(map[string]any{"release_id": rid.String(), "status": "success"})
+	req := httptest.NewRequest(http.MethodPost, "/api/internal/releases/status", bytes.NewReader(body))
+	rec := httptest.NewRecorder()
+	h.UpdateFromCI(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}
+
+func TestUpdateFromCI_NotFound(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sr := mocks.NewMockServiceReader(ctrl)
+	rr := mocks.NewMockReleaseReader(ctrl)
+	rid := uuid.New()
+	rr.EXPECT().GetByID(gomock.Any(), rid).Return(models.Release{}, postgresrepo.ErrReleaseNotFound)
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	body, _ := json.Marshal(map[string]any{"release_id": rid.String(), "status": "failed"})
+	req := httptest.NewRequest(http.MethodPost, "/api/internal/releases/status", bytes.NewReader(body))
+	rec := httptest.NewRecorder()
+	h.UpdateFromCI(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}

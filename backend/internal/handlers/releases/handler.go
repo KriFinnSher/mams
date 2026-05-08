@@ -171,6 +171,11 @@ type rollbackRequest struct {
 	Description string `json:"description"`
 }
 
+type ciStatusRequest struct {
+	ReleaseID string `json:"release_id"`
+	Status    string `json:"status"`
+}
+
 func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 	claims, ok := authmw.ClaimsFromContext(r.Context())
 	if !ok {
@@ -338,5 +343,32 @@ func (h *Handler) Rollback(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusAccepted, map[string]any{
 		"release_id": inProgress.ID.String(),
 		"status":     inProgress.Status,
+	})
+}
+
+func (h *Handler) UpdateFromCI(w http.ResponseWriter, r *http.Request) {
+	var req ciStatusRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	releaseID, err := uuid.Parse(req.ReleaseID)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid release id")
+		return
+	}
+	updated, err := h.MarkResult(r.Context(), releaseID, req.Status)
+	if err != nil {
+		if errors.Is(err, postgresrepo.ErrReleaseNotFound) {
+			utils.WriteError(w, http.StatusNotFound, "release not found")
+			return
+		}
+		utils.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, map[string]any{
+		"release_id": updated.ID.String(),
+		"status":     updated.Status,
 	})
 }
