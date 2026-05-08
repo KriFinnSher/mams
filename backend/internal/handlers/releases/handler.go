@@ -479,10 +479,10 @@ func extractRepoPath(repoURL string) string {
 	if len(parts) >= 4 {
 		owner := parts[len(parts)-2]
 		repo := parts[len(parts)-1]
-		return owner + "/" + repo
+		return strings.ToLower(owner + "/" + repo)
 	}
 	if len(parts) >= 2 {
-		return strings.Join(parts[len(parts)-2:], "/")
+		return strings.ToLower(strings.Join(parts[len(parts)-2:], "/"))
 	}
-	return repoURL
+	return strings.ToLower(repoURL)
 }
