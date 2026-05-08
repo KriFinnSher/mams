@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	uuid "github.com/google/uuid"
+	githubclient "github.com/mams/backend/internal/githubclient"
 	models "github.com/mams/backend/internal/models"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -230,6 +231,21 @@ func (m *MockWorkflowDispatcher) DispatchWorkflow(ctx context.Context, repositor
 func (mr *MockWorkflowDispatcherMockRecorder) DispatchWorkflow(ctx, repositoryURL, workflowID, ref, inputs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DispatchWorkflow", reflect.TypeOf((*MockWorkflowDispatcher)(nil).DispatchWorkflow), ctx, repositoryURL, workflowID, ref, inputs)
+}
+
+// GetLatestWorkflowRun mocks base method.
+func (m *MockWorkflowDispatcher) GetLatestWorkflowRun(ctx context.Context, repositoryURL, branch, workflowID string) (*githubclient.WorkflowRun, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetLatestWorkflowRun", ctx, repositoryURL, branch, workflowID)
+	ret0, _ := ret[0].(*githubclient.WorkflowRun)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetLatestWorkflowRun indicates an expected call of GetLatestWorkflowRun.
+func (mr *MockWorkflowDispatcherMockRecorder) GetLatestWorkflowRun(ctx, repositoryURL, branch, workflowID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetLatestWorkflowRun", reflect.TypeOf((*MockWorkflowDispatcher)(nil).GetLatestWorkflowRun), ctx, repositoryURL, branch, workflowID)
 }
 
 // MockKubeDeployer is a mock of KubeDeployer interface.

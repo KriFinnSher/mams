@@ -3,6 +3,7 @@ package kubeclient
 import (
 	"context"
 	"fmt"
+	"log"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -103,14 +104,18 @@ func (c *Client) GetDeploymentStatus(ctx context.Context, namespace, name string
 }
 
 func (c *Client) UpgradeRolling(ctx context.Context, namespace, name, container, image string) error {
+	log.Printf("UpgradeRolling: namespace=%s name=%s container=%s image=%s", namespace, name, container, image)
 	if c == nil || c.kube == nil {
+		log.Printf("UpgradeRolling: kube is nil")
 		return fmt.Errorf("kubernetes client is not configured")
 	}
 	if err := c.ensureNamespace(ctx, namespace); err != nil {
+		log.Printf("UpgradeRolling: ensureNamespace error: %v", err)
 		return err
 	}
 	dep, err := c.kube.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
+		log.Printf("UpgradeRolling: get deployment error: %v", err)
 		if apierrors.IsNotFound(err) {
 			return c.createDeployment(ctx, namespace, name, container, image, appsv1.RollingUpdateDeploymentStrategyType)
 		}
@@ -274,6 +279,7 @@ func toDeploymentStatus(dep *appsv1.Deployment) DeploymentStatus {
 }
 
 func (c *Client) createDeployment(ctx context.Context, namespace, name, container, image string, strategy appsv1.DeploymentStrategyType) error {
+	log.Printf("createDeployment: namespace=%s name=%s image=%s", namespace, name, image)
 	replicas := int32(1)
 
 	podSpec := corev1.PodSpec{

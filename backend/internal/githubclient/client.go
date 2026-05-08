@@ -208,6 +208,52 @@ func (c *Client) DispatchWorkflow(ctx context.Context, repositoryURL, workflowID
 	return nil
 }
 
+type WorkflowRun struct {
+	Conclusion string `json:"conclusion"`
+	Status     string `json:"status"`
+}
+
+func (c *Client) GetLatestWorkflowRun(ctx context.Context, repositoryURL, branch, workflowID string) (*WorkflowRun, error) {
+	owner, repo, err := parseOwnerRepo(repositoryURL)
+	if err != nil {
+		return nil, err
+	}
+
+	apiURL := fmt.Sprintf("https://api.github.com/repos/%s/%s/actions/workflows/%s/runs?branch=%s&per_page=1", owner, repo, workflowID, branch)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+	if strings.TrimSpace(c.token) != "" {
+		req.Header.Set("Authorization", "Bearer "+c.token)
+	}
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		raw, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return nil, fmt.Errorf("github api status: %d body: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
+	}
+
+	var result struct {
+		WorkflowRuns []WorkflowRun `json:"workflow_runs"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	if len(result.WorkflowRuns) == 0 {
+		return nil, errors.New("no workflow runs found")
+	}
+
+	return &result.WorkflowRuns[0], nil
+}
+
 func parseOwnerRepo(repositoryURL string) (string, string, error) {
 	u, err := url.Parse(strings.TrimSpace(repositoryURL))
 	if err != nil || u.Host == "" {

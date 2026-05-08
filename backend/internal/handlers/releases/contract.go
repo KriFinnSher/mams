@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/mams/backend/internal/githubclient"
 	"github.com/mams/backend/internal/models"
 )
 
@@ -27,6 +28,7 @@ type ReleaseReader interface {
 
 type WorkflowDispatcher interface {
 	DispatchWorkflow(ctx context.Context, repositoryURL, workflowID, ref string, inputs map[string]string) error
+	GetLatestWorkflowRun(ctx context.Context, repositoryURL, branch, workflowID string) (*githubclient.WorkflowRun, error)
 }
 
 type KubeDeployer interface {

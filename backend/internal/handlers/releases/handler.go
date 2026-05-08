@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	authmw "github.com/mams/backend/internal/middleware/auth"
@@ -282,11 +283,20 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to dispatch workflow")
 		return
 	}
+
 	inProgress, err := h.releases.UpdateStatus(r.Context(), created.ID, "in_progress")
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+
+	owner, repo := extractRepoOwner(svc.RepositoryURL), extractRepoName(svc.RepositoryURL)
+	refForDeploy := ref
+	if req.GitTag != "" {
+		refForDeploy = req.GitTag
+	}
+
+	go h.waitForWorkflowAndDeploy(r.Context(), owner, repo, created.ID, svc, req.Environment, req.Strategy, refForDeploy)
 
 	utils.WriteJSON(w, http.StatusAccepted, map[string]any{
 		"release_id": inProgress.ID.String(),
@@ -390,11 +400,14 @@ func (h *Handler) applyKubeDeploy(ctx context.Context, svc models.Service, env, 
 	if h.orgs != nil {
 		got, err := h.orgs.GetSlugByID(ctx, svc.OrganizationID)
 		if err != nil {
+			log.Printf("applyKubeDeploy: GetSlugByID error: %v", err)
 			return err
 		}
 		slug = got
 	}
+	log.Printf("applyKubeDeploy: orgslug=%s", slug)
 	namespace := utils.BuildNamespace(slug, env)
+	log.Printf("applyKubeDeploy: namespace=%s", namespace)
 	deployment := svc.Name
 	container := "app"
 
@@ -416,6 +429,8 @@ func (h *Handler) applyKubeDeploy(ctx context.Context, svc models.Service, env, 
 	}
 	repo := extractRepoName(svc.RepositoryURL)
 	image := registry + "/" + owner + "/" + repo + ":" + imageRef
+
+	log.Printf("applyKubeDeploy: calling kube with image=%s", image)
 
 	switch strategy {
 	case "recreate":
@@ -505,4 +520,68 @@ func extractRepoName(repoURL string) string {
 		return strings.ToLower(parts[len(parts)-1])
 	}
 	return ""
+}
+
+func (h *Handler) waitForWorkflowAndDeploy(
+	ctx context.Context,
+	owner, repo string,
+	releaseID uuid.UUID,
+	svc models.Service,
+	env, strategy, ref string,
+) {
+	repoURL := svc.RepositoryURL
+	workflowID := "deploy.yml"
+
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
+	timeout := time.After(10 * time.Minute)
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Printf("workflow polling cancelled: release_id=%s", releaseID.String())
+			return
+		case <-timeout:
+			log.Printf("workflow polling timeout: release_id=%s", releaseID.String())
+			h.releases.UpdateStatus(ctx, releaseID, "failed")
+			return
+		case <-ticker.C:
+			run, err := h.workflows.GetLatestWorkflowRun(ctx, repoURL, ref, workflowID)
+			if err != nil {
+				log.Printf("get workflow run error: release_id=%s err=%v", releaseID.String(), err)
+				continue
+			}
+
+			if run.Status == "completed" {
+				if run.Conclusion == "success" {
+					log.Printf("workflow completed successfully: release_id=%s", releaseID.String())
+					image := fmt.Sprintf("docker.io/%s/%s:%s", h.dockerHubOwner, repo, ref)
+					if err := h.deployToK8s(ctx, svc, env, strategy, image); err != nil {
+						log.Printf("k8s deploy failed: release_id=%s err=%v", releaseID.String(), err)
+						h.releases.UpdateStatus(ctx, releaseID, "failed")
+						return
+					}
+					h.releases.UpdateStatus(ctx, releaseID, "success")
+					return
+				} else {
+					log.Printf("workflow failed: release_id=%s conclusion=%s", releaseID.String(), run.Conclusion)
+					h.releases.UpdateStatus(ctx, releaseID, "failed")
+					return
+				}
+			}
+		}
+	}
+}
+
+func (h *Handler) deployToK8s(ctx context.Context, svc models.Service, env, strategy, image string) error {
+	namespace := fmt.Sprintf("ns-%s-%s", extractRepoOwner(svc.RepositoryURL), env)
+	switch strategy {
+	case "recreate":
+		return h.kube.UpgradeRecreate(ctx, namespace, svc.Name, "app", image)
+	case "canary":
+		return h.kube.ApplyCanaryPatch(ctx, namespace, svc.Name, svc.Name+"-canary", "app", image, 1)
+	default:
+		return h.kube.UpgradeRolling(ctx, namespace, svc.Name, "app", image)
+	}
 }
