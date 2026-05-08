@@ -98,7 +98,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("create kubernetes client: %v", err)
 	}
-	kube := kubeclient.New(kubeSet)
+	kube := kubeclient.NewWithDocker(kubeSet, cfg.DockerRegistry, cfg.DockerUsername, cfg.DockerPassword)
 	releasesH := releaseshandler.NewHandler(services, orgs, releasesRepo, ghClient, kube, cfg.CallbackBaseURL)
 
 	mux := http.NewServeMux()

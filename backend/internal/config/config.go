@@ -24,6 +24,9 @@ type Config struct {
 	JWTSecret string
 	JWTTTL    time.Duration
 	CallbackBaseURL string
+	DockerRegistry   string
+	DockerUsername   string
+	DockerPassword   string
 }
 
 var (
@@ -76,6 +79,9 @@ func Get() *Config {
 		if callbackBaseURL == "" {
 			callbackBaseURL = "http://host.docker.internal:8081"
 		}
+		dockerRegistry := os.Getenv("DOCKER_REGISTRY")
+		dockerUsername := os.Getenv("DOCKER_USERNAME")
+		dockerPassword := os.Getenv("DOCKER_PASSWORD")
 
 		cfg = &Config{
 			HTTPHost:  httpHost,
@@ -90,6 +96,9 @@ func Get() *Config {
 			JWTSecret: jwtSecret,
 			JWTTTL:    utils.ParseTTLSeconds(os.Getenv("JWT_TTL"), 3600),
 			CallbackBaseURL: callbackBaseURL,
+			DockerRegistry: dockerRegistry,
+			DockerUsername: dockerUsername,
+			DockerPassword: dockerPassword,
 		}
 	})
 

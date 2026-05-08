@@ -25,11 +25,69 @@ type DeploymentStatus struct {
 }
 
 type Client struct {
-	kube kubernetes.Interface
+	kube              kubernetes.Interface
+	dockerRegistry   string
+	dockerUsername    string
+	dockerPassword    string
+}
+
+type DockerCredentials struct {
+	Registry   string
+	Username   string
+	Password   string
 }
 
 func New(kube kubernetes.Interface) *Client {
 	return &Client{kube: kube}
+}
+
+func NewWithDocker(kube kubernetes.Interface, registry, username, password string) *Client {
+	return &Client{kube: kube, dockerRegistry: registry, dockerUsername: username, dockerPassword: password}
+}
+
+func (c *Client) ensureImagePullSecret(ctx context.Context, namespace, secretName string) error {
+	if c.dockerUsername == "" || c.dockerPassword == "" {
+		return nil
+	}
+
+	_, err := c.kube.CoreV1().Secrets(namespace).Get(ctx, secretName, metav1.GetOptions{})
+	if err == nil {
+		return nil
+	}
+	if !apierrors.IsNotFound(err) {
+		return err
+	}
+
+	registry := c.dockerRegistry
+	if registry == "" {
+		registry = "docker.io"
+	}
+
+	data := map[string][]byte{
+		".dockerconfigjson": []byte(fmt.Sprintf(
+			`{"auths":{"%s":{"username":"%s","password":"%s","email":"","auth":"%s"}}}`,
+			registry,
+			c.dockerUsername,
+			c.dockerPassword,
+			fmt.Sprintf("%s:%s", c.dockerUsername, c.dockerPassword),
+		)),
+	}
+
+	secret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: namespace,
+		},
+		Type: corev1.SecretTypeDockerConfigJson,
+		Data: data,
+	}
+
+	_, err = c.kube.CoreV1().Secrets(namespace).Create(ctx, secret, metav1.CreateOptions{})
+	if err != nil && !apierrors.IsAlreadyExists(err) {
+		return err
+	}
+	return nil
 }
 
 func (c *Client) GetDeploymentStatus(ctx context.Context, namespace, name string) (DeploymentStatus, error) {
@@ -217,6 +275,27 @@ func toDeploymentStatus(dep *appsv1.Deployment) DeploymentStatus {
 
 func (c *Client) createDeployment(ctx context.Context, namespace, name, container, image string, strategy appsv1.DeploymentStrategyType) error {
 	replicas := int32(1)
+
+	podSpec := corev1.PodSpec{
+		Containers: []corev1.Container{{
+			Name:  container,
+			Image: image,
+			Ports: []corev1.ContainerPort{{ContainerPort: 80}},
+			ReadinessProbe: &corev1.Probe{
+				ProbeHandler: corev1.ProbeHandler{
+					HTTPGet: &corev1.HTTPGetAction{Path: "/", Port: intstr.FromInt(80)},
+				},
+			},
+		}},
+	}
+
+	if c.dockerUsername != "" {
+		if err := c.ensureImagePullSecret(ctx, namespace, "dockerhub-creds"); err != nil {
+			return fmt.Errorf("ensure image pull secret: %w", err)
+		}
+		podSpec.ImagePullSecrets = []corev1.LocalObjectReference{{Name: "dockerhub-creds"}}
+	}
+
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -233,18 +312,7 @@ func (c *Client) createDeployment(ctx context.Context, namespace, name, containe
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: map[string]string{"app": name},
 				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{{
-						Name:  container,
-						Image: image,
-						Ports: []corev1.ContainerPort{{ContainerPort: 80}},
-						ReadinessProbe: &corev1.Probe{
-							ProbeHandler: corev1.ProbeHandler{
-								HTTPGet: &corev1.HTTPGetAction{Path: "/", Port: intstr.FromInt(80)},
-							},
-						},
-					}},
-				},
+				Spec: podSpec,
 			},
 		},
 	}
