@@ -63,6 +63,45 @@ func TestCreatePending_Status(t *testing.T) {
 	}
 }
 
+func TestMarkResult_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sr := mocks.NewMockServiceReader(ctrl)
+	rr := mocks.NewMockReleaseReader(ctrl)
+	rid := uuid.New()
+	rr.EXPECT().GetByID(gomock.Any(), rid).Return(models.Release{ID: rid, Status: "in_progress"}, nil)
+	rr.EXPECT().UpdateStatus(gomock.Any(), rid, "success").Return(models.Release{ID: rid, Status: "success"}, nil)
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	got, err := h.MarkResult(context.Background(), rid, "success")
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if got.Status != "success" {
+		t.Fatalf("status=%s", got.Status)
+	}
+}
+
+func TestMarkResult_InvalidTransition(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sr := mocks.NewMockServiceReader(ctrl)
+	rr := mocks.NewMockReleaseReader(ctrl)
+	rid := uuid.New()
+	rr.EXPECT().GetByID(gomock.Any(), rid).Return(models.Release{ID: rid, Status: "pending"}, nil)
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	if _, err := h.MarkResult(context.Background(), rid, "success"); err == nil {
+		t.Fatalf("expected error")
+	}
+}
+
+func TestMarkResult_InvalidTargetStatus(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sr := mocks.NewMockServiceReader(ctrl)
+	rr := mocks.NewMockReleaseReader(ctrl)
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	if _, err := h.MarkResult(context.Background(), uuid.New(), "pending"); err == nil {
+		t.Fatalf("expected error")
+	}
+}
+
 func TestGet_NotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	sr := mocks.NewMockServiceReader(ctrl)

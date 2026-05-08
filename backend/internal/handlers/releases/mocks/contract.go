@@ -96,6 +96,21 @@ func (mr *MockReleaseReaderMockRecorder) Create(ctx, rel any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockReleaseReader)(nil).Create), ctx, rel)
 }
 
+// GetByID mocks base method.
+func (m *MockReleaseReader) GetByID(ctx context.Context, id uuid.UUID) (models.Release, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByID", ctx, id)
+	ret0, _ := ret[0].(models.Release)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByID indicates an expected call of GetByID.
+func (mr *MockReleaseReaderMockRecorder) GetByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockReleaseReader)(nil).GetByID), ctx, id)
+}
+
 // ListByService mocks base method.
 func (m *MockReleaseReader) ListByService(ctx context.Context, serviceID uuid.UUID) ([]models.Release, error) {
 	m.ctrl.T.Helper()

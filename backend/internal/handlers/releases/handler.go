@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -38,6 +39,21 @@ func (h *Handler) CreatePending(
 		Description:  description,
 		AuthorUserID: authorUserID,
 	})
+}
+
+func (h *Handler) MarkResult(ctx context.Context, releaseID uuid.UUID, status string) (models.Release, error) {
+	if status != "success" && status != "failed" {
+		return models.Release{}, fmt.Errorf("invalid target status: %s", status)
+	}
+	current, err := h.releases.GetByID(ctx, releaseID)
+	if err != nil {
+		return models.Release{}, err
+	}
+	if current.Status != "in_progress" {
+		return models.Release{}, fmt.Errorf("invalid current status: %s", current.Status)
+	}
+
+	return h.releases.UpdateStatus(ctx, releaseID, status)
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
