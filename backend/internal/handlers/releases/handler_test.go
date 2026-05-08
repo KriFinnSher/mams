@@ -4,6 +4,7 @@ import (
 	"context"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -134,6 +135,73 @@ func TestGet_NotFound(t *testing.T) {
 	rec := httptest.NewRecorder()
 	h.Get(rec, req)
 	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}
+
+func TestRollbackCandidates_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sr := mocks.NewMockServiceReader(ctrl)
+	rr := mocks.NewMockReleaseReader(ctrl)
+	org := uuid.New()
+	sid := uuid.New()
+	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{ID: sid, OrganizationID: org}, nil)
+	rr.EXPECT().ListByService(gomock.Any(), sid).Return([]models.Release{
+		{ServiceID: sid, Status: "success", GitTag: "v1.0.3"},
+		{ServiceID: sid, Status: "failed", GitTag: "v1.0.2"},
+		{ServiceID: sid, Status: "success", GitTag: "v1.0.1"},
+		{ServiceID: sid, Status: "success", GitTag: "v1.0.3"},
+	}, nil)
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	req := httptest.NewRequest(http.MethodGet, "/api/services/"+sid.String()+"/rollback/candidates", nil)
+	req.SetPathValue("id", sid.String())
+	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: org}))
+	rec := httptest.NewRecorder()
+	h.RollbackCandidates(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	var body map[string][]string
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if len(body["git_tags"]) != 2 {
+		t.Fatalf("git_tags len=%d", len(body["git_tags"]))
+	}
+}
+
+func TestRollbackCandidates_NotFound(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sr := mocks.NewMockServiceReader(ctrl)
+	rr := mocks.NewMockReleaseReader(ctrl)
+	sid := uuid.New()
+	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{}, postgresrepo.ErrServiceNotFound)
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	req := httptest.NewRequest(http.MethodGet, "/api/services/"+sid.String()+"/rollback/candidates", nil)
+	req.SetPathValue("id", sid.String())
+	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: uuid.New()}))
+	rec := httptest.NewRecorder()
+	h.RollbackCandidates(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}
+
+func TestRollbackCandidates_ListError(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sr := mocks.NewMockServiceReader(ctrl)
+	rr := mocks.NewMockReleaseReader(ctrl)
+	org := uuid.New()
+	sid := uuid.New()
+	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{ID: sid, OrganizationID: org}, nil)
+	rr.EXPECT().ListByService(gomock.Any(), sid).Return(nil, errors.New("db error"))
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	req := httptest.NewRequest(http.MethodGet, "/api/services/"+sid.String()+"/rollback/candidates", nil)
+	req.SetPathValue("id", sid.String())
+	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: org}))
+	rec := httptest.NewRecorder()
+	h.RollbackCandidates(rec, req)
+	if rec.Code != http.StatusInternalServerError {
 		t.Fatalf("status=%d", rec.Code)
 	}
 }

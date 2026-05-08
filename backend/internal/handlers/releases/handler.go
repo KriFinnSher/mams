@@ -113,6 +113,50 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSON(w, http.StatusOK, map[string]any{"releases": resp})
 }
 
+func (h *Handler) RollbackCandidates(w http.ResponseWriter, r *http.Request) {
+	claims, ok := authmw.ClaimsFromContext(r.Context())
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid service id")
+		return
+	}
+	svc, err := h.services.GetByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, postgresrepo.ErrServiceNotFound) {
+			utils.WriteError(w, http.StatusNotFound, "service not found")
+			return
+		}
+		utils.WriteError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	if svc.OrganizationID != claims.OrganizationID {
+		utils.WriteError(w, http.StatusNotFound, "service not found")
+		return
+	}
+	list, err := h.releases.ListByService(r.Context(), id)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	seen := make(map[string]struct{}, len(list))
+	tags := make([]string, 0, len(list))
+	for _, rel := range list {
+		if rel.Status != "success" || rel.GitTag == "" {
+			continue
+		}
+		if _, ok := seen[rel.GitTag]; ok {
+			continue
+		}
+		seen[rel.GitTag] = struct{}{}
+		tags = append(tags, rel.GitTag)
+	}
+	utils.WriteJSON(w, http.StatusOK, map[string]any{"git_tags": tags})
+}
+
 type deployRequest struct {
 	GitTag      string `json:"git_tag"`
 	Branch      string `json:"branch"`

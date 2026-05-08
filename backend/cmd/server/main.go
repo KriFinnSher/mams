@@ -180,6 +180,13 @@ func main() {
 		}
 		releasesH.Rollback(w, r)
 	})))
+	protected.Handle("/api/services/{id}/rollback/candidates", rbacmw.RequireReleaseManageAccess(services, access, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		releasesH.RollbackCandidates(w, r)
+	})))
 	mux.Handle("/api/", authmw.RequireAuth(validator, protected))
 
 	mux.HandleFunc("/api/internal/services/{id}/logs", func(w http.ResponseWriter, r *http.Request) {
