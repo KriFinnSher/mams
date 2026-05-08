@@ -29,6 +29,7 @@ export function ServicePage() {
   const [releaseStatus, setReleaseStatus] = useState("");
   const [releases, setReleases] = useState([]);
   const [releasesStatus, setReleasesStatus] = useState("");
+  const [activeReleaseID, setActiveReleaseID] = useState("");
   const coverageEnabled = Boolean(svc?.settings?.minimum_test_coverage_enabled ?? svc?.minimum_test_coverage_enabled);
   const coverageMin = Number(svc?.settings?.minimum_test_coverage ?? svc?.minimum_test_coverage ?? 0);
   const coverageCurrent = Number(svc?.overview?.test_coverage ?? svc?.test_coverage ?? 0);
@@ -169,13 +170,32 @@ export function ServicePage() {
         const list = Array.isArray(data?.releases) ? data.releases : Array.isArray(data) ? data : [];
         list.sort((a, b) => new Date(b.deployed_at || b.date || 0) - new Date(a.deployed_at || a.date || 0));
         setReleases(list);
+        if (activeReleaseID) {
+          const current = list.find((item) => item.id === activeReleaseID);
+          if (current?.status === "success") {
+            setReleaseStatus("Операция успешно завершена.");
+            setActiveReleaseID("");
+          } else if (current?.status === "failed") {
+            setReleaseStatus("Операция завершилась ошибкой.");
+            setActiveReleaseID("");
+          } else if (current?.status === "in_progress" || current?.status === "pending") {
+            setReleaseStatus(`Операция выполняется: ${current.status}.`);
+          }
+        }
       } catch {
         if (!cancelled) setReleasesStatus("История релизов недоступна.");
       }
     }
     loadReleases();
-    return () => { cancelled = true; };
-  }, [id]);
+    if (!activeReleaseID) {
+      return () => { cancelled = true; };
+    }
+    const timer = setInterval(loadReleases, 2500);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [id, activeReleaseID]);
 
   useEffect(() => {
     if (moduleTab !== "logs" || String(effectiveRole).toLowerCase() === "observer") return;
@@ -401,6 +421,8 @@ export function ServicePage() {
                         body: JSON.stringify({ git_tag: rollbackTag }),
                       });
                       if (!resp.ok) return setReleaseStatus("Не удалось выполнить rollback.");
+                      const data = await resp.json();
+                      if (data?.release_id) setActiveReleaseID(data.release_id);
                       return setReleaseStatus("Rollback запущен.");
                     }
 
@@ -417,6 +439,8 @@ export function ServicePage() {
                       body: JSON.stringify(payload),
                     });
                     if (!resp.ok) return setReleaseStatus("Не удалось запустить деплой.");
+                    const data = await resp.json();
+                    if (data?.release_id) setActiveReleaseID(data.release_id);
                     return setReleaseStatus("Деплой запущен.");
                   } catch {
                     setReleaseStatus("Операция недоступна.");
