@@ -476,8 +476,13 @@ func (h *Handler) UpdateFromCI(w http.ResponseWriter, r *http.Request) {
 func extractRepoPath(repoURL string) string {
 	repoURL = strings.TrimSuffix(repoURL, ".git")
 	parts := strings.Split(repoURL, "/")
-	if len(parts) >= 2 {
-		return strings.ToLower(strings.Join(parts[len(parts)-2:], "/"))
+	if len(parts) >= 4 {
+		owner := parts[len(parts)-2]
+		repo := parts[len(parts)-1]
+		return owner + "/" + repo
 	}
-	return strings.ToLower(repoURL)
+	if len(parts) >= 2 {
+		return strings.Join(parts[len(parts)-2:], "/")
+	}
+	return repoURL
 }
