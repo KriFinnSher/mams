@@ -121,6 +121,12 @@ type deployRequest struct {
 	Description string `json:"description"`
 }
 
+type rollbackRequest struct {
+	GitTag      string `json:"git_tag"`
+	Environment string `json:"environment"`
+	Description string `json:"description"`
+}
+
 func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 	claims, ok := authmw.ClaimsFromContext(r.Context())
 	if !ok {
@@ -203,6 +209,79 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.workflows.DispatchWorkflow(r.Context(), svc.RepositoryURL, "deploy.yml", ref, inputs); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to dispatch workflow")
+		return
+	}
+	inProgress, err := h.releases.UpdateStatus(r.Context(), created.ID, "in_progress")
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusAccepted, map[string]any{
+		"release_id": inProgress.ID.String(),
+		"status":     inProgress.Status,
+	})
+}
+
+func (h *Handler) Rollback(w http.ResponseWriter, r *http.Request) {
+	claims, ok := authmw.ClaimsFromContext(r.Context())
+	if !ok {
+		utils.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid service id")
+		return
+	}
+	svc, err := h.services.GetByID(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, postgresrepo.ErrServiceNotFound) {
+			utils.WriteError(w, http.StatusNotFound, "service not found")
+			return
+		}
+		utils.WriteError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+	if svc.OrganizationID != claims.OrganizationID {
+		utils.WriteError(w, http.StatusNotFound, "service not found")
+		return
+	}
+	if h.workflows == nil {
+		utils.WriteError(w, http.StatusInternalServerError, "workflow dispatcher is not configured")
+		return
+	}
+
+	var req rollbackRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
+		return
+	}
+	if req.GitTag == "" {
+		utils.WriteError(w, http.StatusBadRequest, "git_tag is required for rollback")
+		return
+	}
+	if req.Environment == "" {
+		req.Environment = "prod"
+	}
+
+	created, err := h.CreatePending(r.Context(), svc.ID, claims.UserID, req.GitTag, "", req.Environment, "rollback", req.Description)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
+
+	inputs := map[string]string{
+		"service_id":  svc.ID.String(),
+		"environment": req.Environment,
+		"strategy":    "rollback",
+		"description": req.Description,
+		"release_id":  created.ID.String(),
+		"git_tag":     req.GitTag,
+		"rollback":    "true",
+	}
+	if err := h.workflows.DispatchWorkflow(r.Context(), svc.RepositoryURL, "deploy.yml", req.GitTag, inputs); err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to dispatch workflow")
 		return
 	}

@@ -304,3 +304,62 @@ func TestDeploy_BlocksWhenCoverageRequirementIsNotMet(t *testing.T) {
 		t.Fatalf("workflow should not be called")
 	}
 }
+
+func TestRollback_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sr := mocks.NewMockServiceReader(ctrl)
+	rr := mocks.NewMockReleaseReader(ctrl)
+	wd := &testWorkflowDispatcher{}
+	org := uuid.New()
+	sid := uuid.New()
+	uid := uuid.New()
+	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{
+		ID: sid, OrganizationID: org, RepositoryURL: "https://github.com/acme/repo",
+	}, nil)
+	rr.EXPECT().Create(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, rel models.Release) (models.Release, error) {
+		if rel.Strategy != "rollback" {
+			t.Fatalf("strategy=%s", rel.Strategy)
+		}
+		rel.ID = uuid.New()
+		rel.Status = "pending"
+		return rel, nil
+	})
+	rr.EXPECT().UpdateStatus(gomock.Any(), gomock.Any(), "in_progress").DoAndReturn(func(_ context.Context, id uuid.UUID, status string) (models.Release, error) {
+		return models.Release{ID: id, ServiceID: sid, Status: status}, nil
+	})
+	h := NewHandler(sr, rr, wd)
+	body, _ := json.Marshal(map[string]any{"git_tag": "v1.2.1", "environment": "prod", "description": "rollback"})
+	req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/rollback", bytes.NewReader(body))
+	req.SetPathValue("id", sid.String())
+	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: org, UserID: uid}))
+	rec := httptest.NewRecorder()
+	h.Rollback(rec, req)
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if !wd.called {
+		t.Fatalf("workflow not called")
+	}
+}
+
+func TestRollback_RequiresGitTag(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sr := mocks.NewMockServiceReader(ctrl)
+	rr := mocks.NewMockReleaseReader(ctrl)
+	wd := &testWorkflowDispatcher{}
+	org := uuid.New()
+	sid := uuid.New()
+	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{
+		ID: sid, OrganizationID: org, RepositoryURL: "https://github.com/acme/repo",
+	}, nil)
+	h := NewHandler(sr, rr, wd)
+	body, _ := json.Marshal(map[string]any{"git_tag": ""})
+	req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/rollback", bytes.NewReader(body))
+	req.SetPathValue("id", sid.String())
+	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: org, UserID: uuid.New()}))
+	rec := httptest.NewRecorder()
+	h.Rollback(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}
