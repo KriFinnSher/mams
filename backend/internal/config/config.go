@@ -69,6 +69,9 @@ func Get() *Config {
 		}
 		gitHubToken := os.Getenv("GITHUB_TOKEN")
 		kubeConfigPath := os.Getenv("KUBE_CONFIG_PATH")
+		if kubeConfigPath == "" {
+			kubeConfigPath = os.ExpandEnv("$HOME/.kube/config")
+		}
 		callbackBaseURL := os.Getenv("CALLBACK_BASE_URL")
 		if callbackBaseURL == "" {
 			callbackBaseURL = "http://host.docker.internal:8081"
