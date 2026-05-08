@@ -18,6 +18,10 @@ export function ServicePage() {
   const [logFrom, setLogFrom] = useState("");
   const [logTo, setLogTo] = useState("");
   const [logsCursor, setLogsCursor] = useState("");
+  const [contracts, setContracts] = useState([]);
+  const [contractsStatus, setContractsStatus] = useState("");
+  const [metricsEmbedURL, setMetricsEmbedURL] = useState("");
+  const [metricsStatus, setMetricsStatus] = useState("");
   const [releaseStrategy, setReleaseStrategy] = useState("rolling");
   const [releaseEnv, setReleaseEnv] = useState("dev");
   const [releaseBranch, setReleaseBranch] = useState("main");
@@ -153,6 +157,59 @@ export function ServicePage() {
     loadLogs();
     return () => { cancelled = true; };
   }, [id, moduleTab, logLevel, logText, logFrom, logTo]);
+
+  useEffect(() => {
+    if (moduleTab !== "contracts") return;
+    let cancelled = false;
+    async function loadContracts() {
+      const token = localStorage.getItem("mams_token");
+      if (!token) return setContractsStatus("Ошибка авторизации.");
+      setContractsStatus("Загрузка контрактов...");
+      try {
+        const resp = await fetch(`/api/services/${id}/contracts`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        if (resp.status === 404) return setContractsStatus("Файл project.proto отсутствует.");
+        if (resp.status === 400) return setContractsStatus("Файл project.proto невалиден.");
+        if (!resp.ok) return setContractsStatus("Не удалось загрузить контракты.");
+        const data = await resp.json();
+        if (cancelled) return;
+        const list = Array.isArray(data?.methods) ? data.methods : [];
+        setContracts(list);
+        setContractsStatus(list.length === 0 ? "Контракты не найдены." : "");
+      } catch {
+        if (!cancelled) setContractsStatus("Не удалось загрузить контракты.");
+      }
+    }
+    loadContracts();
+    return () => { cancelled = true; };
+  }, [id, moduleTab]);
+
+  useEffect(() => {
+    if (moduleTab !== "metrics" || isObserver) return;
+    let cancelled = false;
+    async function loadMetrics() {
+      const token = localStorage.getItem("mams_token");
+      if (!token) return setMetricsStatus("Ошибка авторизации.");
+      setMetricsStatus("Загрузка метрик...");
+      try {
+        const resp = await fetch(`/api/services/${id}/metrics`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        if (!resp.ok) return setMetricsStatus("Не удалось загрузить метрики.");
+        const data = await resp.json();
+        if (cancelled) return;
+        setMetricsEmbedURL(data?.embed_url || "");
+        setMetricsStatus(data?.embed_url ? "" : "Для сервиса не задан Grafana dashboard.");
+      } catch {
+        if (!cancelled) setMetricsStatus("Не удалось загрузить метрики.");
+      }
+    }
+    loadMetrics();
+    return () => { cancelled = true; };
+  }, [id, moduleTab, isObserver]);
 
   useEffect(() => {
     let cancelled = false;
@@ -467,8 +524,37 @@ export function ServicePage() {
                 <button type="button" className={moduleTab === "contracts" ? "module-tab active" : "module-tab"} onClick={() => setModuleTab("contracts")}>Контракты</button>
               </div>
               <div className="modules-grid">
-                {moduleTab === "contracts" && <article className="module-card"><p className="status">Просмотр контрактов сервиса.</p></article>}
-                {moduleTab === "metrics" && !isObserver && <article className="module-card"><p className="status">Метрики из Grafana.</p></article>}
+                {moduleTab === "contracts" && (
+                  <article className="module-card">
+                    {contractsStatus && <p className="status">{contractsStatus}</p>}
+                    {contracts.map((m, idx) => (
+                      <div key={`${m.name || "m"}-${idx}`} className="contract-item">
+                        <div className="contract-toggle">
+                          <strong>{m.name}</strong>
+                          <span>{m.input} → {m.output}</span>
+                        </div>
+                        {Array.isArray(m.parameters) && m.parameters.length > 0 && (
+                          <ul className="contract-params">
+                            {m.parameters.map((p, pIdx) => <li key={`${p.name || "p"}-${pIdx}`}>{p.name}: {p.type}</li>)}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </article>
+                )}
+                {moduleTab === "metrics" && !isObserver && (
+                  <article className="module-card">
+                    {metricsStatus && <p className="status">{metricsStatus}</p>}
+                    {metricsEmbedURL && (
+                      <iframe
+                        className="metrics-frame"
+                        src={metricsEmbedURL}
+                        title="metrics"
+                        loading="lazy"
+                      />
+                    )}
+                  </article>
+                )}
                 {moduleTab === "logs" && !isObserver && (
                   <article className="module-card">
                     <div className="logs-filters">

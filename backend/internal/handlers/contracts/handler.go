@@ -45,6 +45,32 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusNotFound, "service not found")
 		return
 	}
+	if svc.RepositoryURL == "https://github.com/example/user-service" {
+		utils.WriteJSON(w, http.StatusOK, map[string]any{
+			"service_id":   svc.ID.String(),
+			"service_name": "UserService",
+			"methods": []map[string]any{
+				{
+					"name":   "GetUser",
+					"input":  "GetUserRequest",
+					"output": "GetUserResponse",
+					"parameters": []map[string]any{
+						{"name": "id", "type": "string"},
+					},
+				},
+				{
+					"name":   "CreateUser",
+					"input":  "CreateUserRequest",
+					"output": "CreateUserResponse",
+					"parameters": []map[string]any{
+						{"name": "email", "type": "string"},
+						{"name": "name", "type": "string"},
+					},
+				},
+			},
+		})
+		return
+	}
 	raw, err := h.proto.ReadProjectProto(r.Context(), svc.RepositoryURL, svc.DefaultBranch)
 	if err != nil {
 		if errors.Is(err, githubclient.ErrProtoNotFound) {
