@@ -20,6 +20,7 @@ type Config struct {
 }
 
 type LogEntry struct {
+	ServiceID   string `json:"service_id,omitempty"`
 	Environment string `json:"environment"`
 	Level       string `json:"level"`
 	Message     string `json:"message"`
@@ -48,7 +49,7 @@ func main() {
 			continue
 		}
 
-		entry := parseLine(line, cfg.Env)
+		entry := parseLine(line, cfg.ServiceID, cfg.Env)
 		batch = append(batch, entry)
 
 		if len(batch) >= cfg.BatchSize {
@@ -70,8 +71,10 @@ func main() {
 	}
 }
 
-func parseLine(line, env string) LogEntry {
+func parseLine(line, serviceID, fallbackEnv string) LogEntry {
 	var msg struct {
+		ServiceID   string `json:"service_id"`
+		Environment string `json:"environment"`
 		Level   string `json:"level"`
 		Message string `json:"message"`
 		Msg     string `json:"msg"`
@@ -89,11 +92,20 @@ func parseLine(line, env string) LogEntry {
 		if message == "" {
 			message = line
 		}
-		return LogEntry{Environment: env, Level: level, Message: message}
+		env := msg.Environment
+		if env == "" {
+			env = fallbackEnv
+		}
+		sid := msg.ServiceID
+		if sid == "" {
+			sid = serviceID
+		}
+		return LogEntry{ServiceID: sid, Environment: env, Level: level, Message: message}
 	}
 
 	return LogEntry{
-		Environment: env,
+		ServiceID:   serviceID,
+		Environment: fallbackEnv,
 		Level:       "info",
 		Message:     line,
 	}

@@ -38,23 +38,5 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSON(w, http.StatusOK, map[string]any{
-		"id":                            svc.ID.String(),
-		"organization_id":               svc.OrganizationID.String(),
-		"created_by_user_id":            svc.CreatedByUserID.String(),
-		"owner_user_id":                 svc.OwnerUserID.String(),
-		"name":                          svc.Name,
-		"description":                   svc.Description,
-		"type":                          svc.Type,
-		"version":                       svc.Version,
-		"test_coverage":                 svc.TestCoverage,
-		"minimum_test_coverage_enabled": svc.MinimumTestCoverageEnabled,
-		"minimum_test_coverage":         svc.MinimumTestCoverage,
-		"pii_sensitive":                 svc.PIISensitive,
-		"responsible_team_ref":          svc.ResponsibleTeamRef,
-		"importance":                    svc.Importance,
-		"repository_url":                svc.RepositoryURL,
-		"default_branch":                svc.DefaultBranch,
-		"grafana_dashboard_uid":         svc.GrafanaDashboardUID,
-	})
+	utils.WriteJSON(w, http.StatusOK, toServiceCardDTO(svc))
 }
