@@ -41,6 +41,36 @@ func (c *Client) GetDeploymentStatus(ctx context.Context, namespace, name string
 	return toDeploymentStatus(dep), nil
 }
 
+func (c *Client) UpgradeRolling(ctx context.Context, namespace, name, container, image string) error {
+	if c == nil || c.kube == nil {
+		return fmt.Errorf("kubernetes client is not configured")
+	}
+	dep, err := c.kube.AppsV1().Deployments(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	if len(dep.Spec.Template.Spec.Containers) == 0 {
+		return fmt.Errorf("deployment has no containers")
+	}
+	updated := false
+	for i := range dep.Spec.Template.Spec.Containers {
+		if dep.Spec.Template.Spec.Containers[i].Name != container {
+			continue
+		}
+		dep.Spec.Template.Spec.Containers[i].Image = image
+		updated = true
+		break
+	}
+	if !updated {
+		return fmt.Errorf("container %q not found", container)
+	}
+	if dep.Spec.Strategy.Type == "" {
+		dep.Spec.Strategy.Type = appsv1.RollingUpdateDeploymentStrategyType
+	}
+	_, err = c.kube.AppsV1().Deployments(namespace).Update(ctx, dep, metav1.UpdateOptions{})
+	return err
+}
+
 func toDeploymentStatus(dep *appsv1.Deployment) DeploymentStatus {
 	return DeploymentStatus{
 		Namespace:           dep.Namespace,
