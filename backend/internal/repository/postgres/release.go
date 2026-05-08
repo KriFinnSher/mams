@@ -47,7 +47,7 @@ INSERT INTO releases (
     service_id, git_tag, branch, environment, strategy, status, description, author_user_id
 )
 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, service_id, git_tag, branch, environment, strategy, status, description, author_user_id, deployed_at
+RETURNING id, service_id, git_tag, branch, environment, strategy, status, description, author_user_id, '' AS author, deployed_at
 `
 
 	out, err := scanRelease(r.q.QueryRow(
@@ -71,7 +71,7 @@ RETURNING id, service_id, git_tag, branch, environment, strategy, status, descri
 
 func (r *ReleaseRepository) GetByID(ctx context.Context, id uuid.UUID) (models.Release, error) {
 	const q = `
-SELECT id, service_id, git_tag, branch, environment, strategy, status, description, author_user_id, deployed_at
+SELECT id, service_id, git_tag, branch, environment, strategy, status, description, author_user_id, '' AS author, deployed_at
 FROM releases
 WHERE id = $1
 `
@@ -86,9 +86,10 @@ WHERE id = $1
 
 func (r *ReleaseRepository) ListByService(ctx context.Context, serviceID uuid.UUID) ([]models.Release, error) {
 	const q = `
-SELECT id, service_id, git_tag, branch, environment, strategy, status, description, author_user_id, deployed_at
-FROM releases
-WHERE service_id = $1
+SELECT r.id, r.service_id, r.git_tag, r.branch, r.environment, r.strategy, r.status, r.description, r.author_user_id, COALESCE(u.login, '') AS author, r.deployed_at
+FROM releases r
+LEFT JOIN users u ON u.id = r.author_user_id
+WHERE r.service_id = $1
 ORDER BY deployed_at DESC
 `
 
@@ -118,7 +119,7 @@ func (r *ReleaseRepository) UpdateStatus(ctx context.Context, id uuid.UUID, stat
 UPDATE releases
 SET status = $2
 WHERE id = $1
-RETURNING id, service_id, git_tag, branch, environment, strategy, status, description, author_user_id, deployed_at
+RETURNING id, service_id, git_tag, branch, environment, strategy, status, description, author_user_id, '' AS author, deployed_at
 `
 
 	out, err := scanRelease(r.q.QueryRow(ctx, q, id, status))
@@ -160,6 +161,7 @@ func scanRelease(r rowScanner) (models.Release, error) {
 		&rel.Status,
 		&rel.Description,
 		&rel.AuthorUserID,
+		&rel.Author,
 		&rel.DeployedAt,
 	); err != nil {
 		return models.Release{}, err

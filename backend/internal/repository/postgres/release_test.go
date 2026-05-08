@@ -36,7 +36,8 @@ func (r releaseTestRow) Scan(dest ...any) error {
 	*(dest[6].(*string)) = r.release.Status
 	*(dest[7].(*string)) = r.release.Description
 	*(dest[8].(*uuid.UUID)) = r.release.AuthorUserID
-	*(dest[9].(*time.Time)) = r.release.DeployedAt
+	*(dest[9].(*string)) = r.release.Author
+	*(dest[10].(*time.Time)) = r.release.DeployedAt
 	return nil
 }
 
@@ -76,6 +77,7 @@ func testRelease() models.Release {
 		Status:       "pending",
 		Description:  "release",
 		AuthorUserID: uuid.New(),
+		Author:       "owner",
 		DeployedAt:   time.Now().UTC(),
 	}
 }

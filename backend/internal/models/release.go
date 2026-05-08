@@ -16,5 +16,6 @@ type Release struct {
 	Status       string
 	Description  string
 	AuthorUserID uuid.UUID
+	Author       string
 	DeployedAt   time.Time
 }

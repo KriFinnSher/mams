@@ -106,6 +106,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 			"strategy":       rel.Strategy,
 			"status":         rel.Status,
 			"description":    rel.Description,
+			"author":         rel.Author,
 			"author_user_id": rel.AuthorUserID.String(),
 			"deployed_at":    rel.DeployedAt,
 		})
