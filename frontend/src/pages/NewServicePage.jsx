@@ -42,25 +42,123 @@ export function NewServicePage() {
 
   return (
     <main className="page">
-      <h1>Добавление сервиса</h1>
-      <p className="subtitle">Создайте новый сервис в текущей организации.</p>
       <NavBar />
-      <form className="service-form" onSubmit={onSubmit}>
-        <label>Название<input name="name" type="text" required /></label>
-        <label>Описание<textarea name="description" rows="3" /></label>
-        <label>Тип<select name="type" defaultValue="business" required><option value="business">business</option><option value="composition">composition</option></select></label>
-        <label>Покрытие тестами (%)<input name="test_coverage" type="number" min="0" max="100" defaultValue="0" required /></label>
-        <label>Минимальное покрытие (%)<input name="minimum_test_coverage" type="number" min="0" max="100" defaultValue="0" required /></label>
-        <label className="checkbox-row"><input name="minimum_test_coverage_enabled" type="checkbox" />Минимальное покрытие включено</label>
-        <label className="checkbox-row"><input name="pii_sensitive" type="checkbox" />Сервис работает с PII</label>
-        <label>Ссылка на команду<input name="responsible_team_ref" type="text" placeholder="@team" /></label>
-        <label>Важность<select name="importance" defaultValue="medium" required><option value="low">low</option><option value="medium">medium</option><option value="high">high</option><option value="critical">critical</option></select></label>
-        <label>URL репозитория<input name="repository_url" type="url" required /></label>
-        <label>Ветка по умолчанию<input name="default_branch" type="text" defaultValue="main" required /></label>
-        <label>UID Grafana dashboard<input name="grafana_dashboard_uid" type="text" /></label>
-        <button type="submit">Создать сервис</button>
-      </form>
-      <p className="status">{status}</p>
+
+      <section className="new-service-layout">
+        <div className="new-service-head">
+          <h1>Новый сервис</h1>
+          <p>Создайте карточку сервиса и подключите базовые параметры платформы.</p>
+        </div>
+
+        <form className="new-service-form" onSubmit={onSubmit}>
+          <section className="new-form-section">
+            <div className="new-form-section-head">
+              <h2>Основное</h2>
+              <p>Базовая карточка сервиса.</p>
+            </div>
+
+            <label className="new-field new-field-full">
+              <span>Название</span>
+              <input name="name" type="text" required />
+            </label>
+
+            <label className="new-field new-field-full">
+              <span>Описание</span>
+              <textarea name="description" rows="3" />
+            </label>
+
+            <div className="new-form-grid">
+              <label className="new-field">
+                <span>Тип</span>
+                <select name="type" defaultValue="business" required>
+                  <option value="business">business</option>
+                  <option value="composition">composition</option>
+                </select>
+              </label>
+
+              <label className="new-field">
+                <span>Важность</span>
+                <select name="importance" defaultValue="medium" required>
+                  <option value="low">low</option>
+                  <option value="medium">medium</option>
+                  <option value="high">high</option>
+                  <option value="critical">critical</option>
+                </select>
+              </label>
+
+              <label className="new-field">
+                <span>Покрытие тестами (%)</span>
+                <input name="test_coverage" type="number" min="0" max="100" defaultValue="0" required />
+              </label>
+
+              <label className="new-field">
+                <span>Ссылка на команду</span>
+                <input name="responsible_team_ref" type="text" placeholder="@team" />
+              </label>
+            </div>
+
+            <label className="new-check">
+              <input name="pii_sensitive" type="checkbox" />
+              <span>
+                <strong>Сервис работает с PII</strong>
+                <small>Отметьте, если сервис обрабатывает персональные данные.</small>
+              </span>
+            </label>
+          </section>
+
+          <section className="new-form-section">
+            <div className="new-form-section-head">
+              <h2>Quality gate</h2>
+              <p>Порог покрытия, который может блокировать релиз.</p>
+            </div>
+
+            <div className="new-form-grid">
+              <label className="new-field">
+                <span>Минимальное покрытие (%)</span>
+                <input name="minimum_test_coverage" type="number" min="0" max="100" defaultValue="0" required />
+              </label>
+
+              <label className="new-check compact">
+                <input name="minimum_test_coverage_enabled" type="checkbox" />
+                <span>
+                  <strong>Порог включен</strong>
+                  <small>Контроль будет применяться при релизе.</small>
+                </span>
+              </label>
+            </div>
+          </section>
+
+          <section className="new-form-section">
+            <div className="new-form-section-head">
+              <h2>Интеграции</h2>
+              <p>Репозиторий, ветка и Grafana dashboard.</p>
+            </div>
+
+            <label className="new-field new-field-full">
+              <span>URL репозитория</span>
+              <input name="repository_url" type="url" required />
+            </label>
+
+            <div className="new-form-grid">
+              <label className="new-field">
+                <span>Ветка по умолчанию</span>
+                <input name="default_branch" type="text" defaultValue="main" required />
+              </label>
+
+              <label className="new-field">
+                <span>UID Grafana dashboard</span>
+                <input name="grafana_dashboard_uid" type="text" />
+              </label>
+            </div>
+          </section>
+
+          <div className="new-form-actions">
+            <button type="submit">Создать сервис</button>
+          </div>
+        </form>
+
+        {status && <p className="status">{status}</p>}
+      </section>
     </main>
   );
 }

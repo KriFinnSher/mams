@@ -3,16 +3,29 @@ import { Link } from "react-router-dom";
 import { NavBar } from "../components/NavBar";
 
 function ServiceListCard({ service }) {
+  const name = service?.overview?.name || service?.name || service?.id;
+  const description = service?.overview?.description || "Описание отсутствует";
+  const importance = service?.overview?.importance;
+  const version = service?.overview?.version;
+
   return (
-    <li className="services-item">
-      <div className="services-item-head">
-        <Link to={`/services/${service.id}`} className="services-item-title">{service.name || service.id}</Link>
-        {service.criticality && <span className="services-item-badge">{service.criticality}</span>}
+    <li className="service-card">
+      <div className="service-card-main">
+        <div className="service-card-icon">
+          {(name || "S").slice(0, 1).toUpperCase()}
+        </div>
+
+        <div>
+          <Link to={`/services/${service.id}`} className="service-card-title">
+            {name}
+          </Link>
+          <p className="service-card-description">{description}</p>
+        </div>
       </div>
-      {service.description && <p className="services-item-description">{service.description}</p>}
-      <div className="services-item-meta">
-        <span>ID: {service.id}</span>
-        {service.version && <span>Версия: {service.version}</span>}
+
+      <div className="service-card-meta">
+        {version && <span>v{version}</span>}
+        {importance && <span className={`importance-badge ${importance}`}>{importance}</span>}
       </div>
     </li>
   );
@@ -48,10 +61,28 @@ export function ServicesPage() {
 
   return (
     <main className="page">
-      <h1>Список сервисов</h1>
       <NavBar />
+
+      <section className="list-head">
+        <div>
+          <h1>Сервисы</h1>
+          <p>Каталог сервисов организации и быстрый переход к управлению.</p>
+        </div>
+
+        <Link to="/services/new" className="list-create-btn">
+          Новый сервис
+        </Link>
+      </section>
+
       {status && <p className="status">{status}</p>}
-      {items.length > 0 && <ul className="services-list">{items.map((item) => <ServiceListCard key={item.id} service={item} />)}</ul>}
+
+      {items.length > 0 && (
+        <ul className="services-list">
+          {items.map((item) => (
+            <ServiceListCard key={item.id} service={item} />
+          ))}
+        </ul>
+      )}
     </main>
   );
 }

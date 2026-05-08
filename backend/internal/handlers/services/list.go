@@ -17,11 +17,6 @@ func NewHandler(services ServiceReader, log *logx.Logger) *Handler {
 	return &Handler{services: services, log: log}
 }
 
-type serviceItem struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-}
-
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	claims, ok := authmw.ClaimsFromContext(r.Context())
 	if !ok {
@@ -36,12 +31,9 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := make([]serviceItem, 0, len(list))
+	resp := make([]ServiceCardDTO, 0, len(list))
 	for _, s := range list {
-		resp = append(resp, serviceItem{
-			ID:   s.ID.String(),
-			Name: s.Name,
-		})
+		resp = append(resp, toServiceCardDTO(s))
 	}
 
 	utils.WriteJSON(w, http.StatusOK, map[string]any{"services": resp})

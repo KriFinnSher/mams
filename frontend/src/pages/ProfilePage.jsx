@@ -32,41 +32,69 @@ export function ProfilePage() {
 
   return (
     <main className="page">
-      <h1>Профиль пользователя</h1>
       <NavBar />
+
+      <section className="profile-page-head">
+        <div>
+          <h1>Профиль</h1>
+          <p>Информация об учетной записи и доступах к сервисам.</p>
+        </div>
+      </section>
+
       {status && <p className="status">{status}</p>}
+
       {profile && (
-        <section className="profile-card">
-          <div className="profile-head">
-            <h2>Основная информация</h2>
-            <button
-              type="button"
-              className="logout-btn"
-              onClick={() => {
-                localStorage.removeItem("mams_token");
-                navigate("/login", { replace: true });
-              }}
-            >
-              Выйти
-            </button>
+        <section className="profile-hero">
+          <div className="profile-avatar">
+            {(profile.login || "U").slice(0, 1).toUpperCase()}
           </div>
-          <p>Логин: {profile.login}</p>
-          <p>Организация: {profile.organization_id}</p>
+
+          <div className="profile-hero-main">
+            <h2>{profile.login}</h2>
+            <p>Организация: {profile.organization_id}</p>
+          </div>
+
+          <button
+            type="button"
+            className="profile-logout-btn"
+            onClick={() => {
+              localStorage.removeItem("mams_token");
+              navigate("/login", { replace: true });
+            }}
+          >
+            Выйти
+          </button>
         </section>
       )}
-      <section className="profile-card">
-        <h2>Роли в сервисах</h2>
-        <p>Здесь отображаются только сервисы, где ваша роль отличается от наблюдателя (`observer`).</p>
-        {profile && Array.isArray(profile.services) && profile.services.length > 0 ? (
-          <ul className="roles-list">
-            {profile.services.filter((item) => String(item.role || "").toLowerCase() !== "observer").map((item) => (
-              <li key={item.service_id} className="roles-item">
-                <Link to={`/services/${item.service_id}`}>{item.service_name || item.service_id}</Link>
-                <span>{item.role}</span>
-              </li>
-            ))}
-          </ul>
-        ) : <p className="status">Нет сервисов с недефолтной ролью.</p>}
+
+      <section className="profile-roles-card">
+        <div className="profile-section-head">
+          <div>
+            <h2>Роли в сервисах</h2>
+            <p>Сервисы, где ваша роль отличается от observer.</p>
+          </div>
+        </div>
+
+        {profile && Array.isArray(profile.services) && profile.services.filter((item) => String(item.role || "").toLowerCase() !== "observer").length > 0 ? (
+          <div className="profile-roles-list">
+            {profile.services
+              .filter((item) => String(item.role || "").toLowerCase() !== "observer")
+              .map((item) => (
+                <Link key={item.service_id} to={`/services/${item.service_id}`} className="profile-role-item">
+                  <div>
+                    <strong>{item.service_name || item.service_id}</strong>
+                    <span>{item.service_id}</span>
+                  </div>
+
+                  <span className={`profile-role-badge ${String(item.role || "").toLowerCase()}`}>
+                    {item.role}
+                  </span>
+                </Link>
+              ))}
+          </div>
+        ) : (
+          <p className="status">Нет сервисов с недефолтной ролью.</p>
+        )}
       </section>
     </main>
   );
