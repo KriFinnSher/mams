@@ -129,6 +129,7 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	originalBranch := req.Branch
 	if req.Branch == "" && req.GitTag == "" {
 		req.Branch = svc.DefaultBranch
 	}
@@ -138,7 +139,7 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 	if req.Strategy == "" {
 		req.Strategy = "rolling"
 	}
-	if (req.Environment == "dev" || req.Environment == "staging") && req.Branch == "" {
+	if (req.Environment == "dev" || req.Environment == "staging") && originalBranch == "" {
 		utils.WriteError(w, http.StatusBadRequest, "branch is required for dev/staging deploy")
 		return
 	}
