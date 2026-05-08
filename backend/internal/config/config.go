@@ -27,6 +27,7 @@ type Config struct {
 	DockerRegistry   string
 	DockerUsername   string
 	DockerPassword   string
+	DockerHubOwner   string
 }
 
 var (
@@ -82,6 +83,7 @@ func Get() *Config {
 		dockerRegistry := os.Getenv("DOCKER_REGISTRY")
 		dockerUsername := os.Getenv("DOCKER_USERNAME")
 		dockerPassword := os.Getenv("DOCKER_PASSWORD")
+		dockerHubOwner := os.Getenv("DOCKER_HUB_OWNER")
 
 		cfg = &Config{
 			HTTPHost:  httpHost,
@@ -99,6 +101,7 @@ func Get() *Config {
 			DockerRegistry: dockerRegistry,
 			DockerUsername: dockerUsername,
 			DockerPassword: dockerPassword,
+			DockerHubOwner: dockerHubOwner,
 		}
 	})
 

@@ -23,10 +23,11 @@ type Handler struct {
 	workflows WorkflowDispatcher
 	kube     KubeDeployer
 	callbackURL string
+	dockerHubOwner string
 }
 
-func NewHandler(services ServiceReader, orgs OrganizationReader, releases ReleaseReader, workflows WorkflowDispatcher, kube KubeDeployer, callbackURL string) *Handler {
-	return &Handler{services: services, orgs: orgs, releases: releases, workflows: workflows, kube: kube, callbackURL: callbackURL}
+func NewHandler(services ServiceReader, orgs OrganizationReader, releases ReleaseReader, workflows WorkflowDispatcher, kube KubeDeployer, callbackURL, dockerHubOwner string) *Handler {
+	return &Handler{services: services, orgs: orgs, releases: releases, workflows: workflows, kube: kube, callbackURL: callbackURL, dockerHubOwner: dockerHubOwner}
 }
 
 func (h *Handler) CreatePending(
@@ -407,8 +408,12 @@ func (h *Handler) applyKubeDeploy(ctx context.Context, svc models.Service, env, 
 	if registry == "" {
 		registry = "docker.io"
 	}
-	repo := extractRepoPath(svc.RepositoryURL)
-	image := registry + "/" + repo + ":" + imageRef
+	owner := h.dockerHubOwner
+	if owner == "" {
+		owner = extractRepoOwner(svc.RepositoryURL)
+	}
+	repo := extractRepoName(svc.RepositoryURL)
+	image := registry + "/" + owner + "/" + repo + ":" + imageRef
 
 	switch strategy {
 	case "recreate":
@@ -476,13 +481,26 @@ func (h *Handler) UpdateFromCI(w http.ResponseWriter, r *http.Request) {
 func extractRepoPath(repoURL string) string {
 	repoURL = strings.TrimSuffix(repoURL, ".git")
 	parts := strings.Split(repoURL, "/")
-	if len(parts) >= 4 {
-		owner := parts[len(parts)-2]
-		repo := parts[len(parts)-1]
-		return strings.ToLower(owner + "/" + repo)
-	}
 	if len(parts) >= 2 {
 		return strings.ToLower(strings.Join(parts[len(parts)-2:], "/"))
 	}
 	return strings.ToLower(repoURL)
+}
+
+func extractRepoOwner(repoURL string) string {
+	repoURL = strings.TrimSuffix(repoURL, ".git")
+	parts := strings.Split(repoURL, "/")
+	if len(parts) >= 2 {
+		return strings.ToLower(parts[len(parts)-2])
+	}
+	return ""
+}
+
+func extractRepoName(repoURL string) string {
+	repoURL = strings.TrimSuffix(repoURL, ".git")
+	parts := strings.Split(repoURL, "/")
+	if len(parts) >= 1 {
+		return strings.ToLower(parts[len(parts)-1])
+	}
+	return ""
 }
