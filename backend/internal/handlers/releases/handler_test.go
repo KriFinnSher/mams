@@ -161,7 +161,7 @@ func TestDeploy_BranchRequiredForDevStaging(t *testing.T) {
 	}
 }
 
-func TestDeploy_UsesDefaultBranchFallbackForProd(t *testing.T) {
+func TestDeploy_UsesDefaultBranchFallbackForNonDevStaging(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	sr := mocks.NewMockServiceReader(ctrl)
 	rr := mocks.NewMockReleaseReader(ctrl)
@@ -172,9 +172,14 @@ func TestDeploy_UsesDefaultBranchFallbackForProd(t *testing.T) {
 	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{
 		ID: sid, OrganizationID: org, RepositoryURL: "https://github.com/acme/repo", DefaultBranch: "main",
 	}, nil)
-	rr.EXPECT().Create(gomock.Any(), gomock.Any()).Return(models.Release{ID: uuid.New(), ServiceID: sid, Status: "pending"}, nil)
+	rr.EXPECT().Create(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, rel models.Release) (models.Release, error) {
+		if rel.Branch != "main" {
+			t.Fatalf("expected default branch fallback, got %q", rel.Branch)
+		}
+		return models.Release{ID: uuid.New(), ServiceID: sid, Status: "pending"}, nil
+	})
 	h := NewHandler(sr, rr, wd)
-	body, _ := json.Marshal(map[string]any{"environment": "prod", "strategy": "rolling", "branch": "", "git_tag": ""})
+	body, _ := json.Marshal(map[string]any{"environment": "qa", "strategy": "rolling", "branch": "", "git_tag": ""})
 	req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/deploy", bytes.NewReader(body))
 	req.SetPathValue("id", sid.String())
 	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: org, UserID: uid}))
