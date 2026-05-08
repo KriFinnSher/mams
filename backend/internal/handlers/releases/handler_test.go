@@ -99,6 +99,9 @@ func TestDeploy_Success(t *testing.T) {
 		}
 		return rel, nil
 	})
+	rr.EXPECT().UpdateStatus(gomock.Any(), gomock.Any(), "in_progress").DoAndReturn(func(_ context.Context, id uuid.UUID, status string) (models.Release, error) {
+		return models.Release{ID: id, ServiceID: sid, Status: status}, nil
+	})
 	h := NewHandler(sr, rr, wd)
 	body, _ := json.Marshal(map[string]any{"environment": "dev", "strategy": "rolling", "branch": "main"})
 	req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/deploy", bytes.NewReader(body))
@@ -178,6 +181,9 @@ func TestDeploy_UsesDefaultBranchFallbackForNonDevStaging(t *testing.T) {
 		}
 		return models.Release{ID: uuid.New(), ServiceID: sid, Status: "pending"}, nil
 	})
+	rr.EXPECT().UpdateStatus(gomock.Any(), gomock.Any(), "in_progress").DoAndReturn(func(_ context.Context, id uuid.UUID, status string) (models.Release, error) {
+		return models.Release{ID: id, ServiceID: sid, Status: status}, nil
+	})
 	h := NewHandler(sr, rr, wd)
 	body, _ := json.Marshal(map[string]any{"environment": "qa", "strategy": "rolling", "branch": "", "git_tag": ""})
 	req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/deploy", bytes.NewReader(body))
@@ -212,5 +218,31 @@ func TestDeploy_GitTagRequiredForProd(t *testing.T) {
 	h.Deploy(rec, req)
 	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("status=%d", rec.Code)
+	}
+}
+
+func TestDeploy_BlocksWhenCoverageRequirementIsNotMet(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sr := mocks.NewMockServiceReader(ctrl)
+	rr := mocks.NewMockReleaseReader(ctrl)
+	wd := &testWorkflowDispatcher{}
+	org := uuid.New()
+	sid := uuid.New()
+	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{
+		ID: sid, OrganizationID: org, RepositoryURL: "https://github.com/acme/repo", DefaultBranch: "main",
+		TestCoverage: 65, MinimumTestCoverageEnabled: true, MinimumTestCoverage: 70,
+	}, nil)
+	h := NewHandler(sr, rr, wd)
+	body, _ := json.Marshal(map[string]any{"environment": "dev", "strategy": "rolling", "branch": "main"})
+	req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/deploy", bytes.NewReader(body))
+	req.SetPathValue("id", sid.String())
+	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: org, UserID: uuid.New()}))
+	rec := httptest.NewRecorder()
+	h.Deploy(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if wd.called {
+		t.Fatalf("workflow should not be called")
 	}
 }

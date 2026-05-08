@@ -147,6 +147,10 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "branch is required for dev/staging deploy")
 		return
 	}
+	if svc.MinimumTestCoverageEnabled && svc.TestCoverage < svc.MinimumTestCoverage {
+		utils.WriteError(w, http.StatusBadRequest, "minimum test coverage requirement is not met")
+		return
+	}
 
 	created, err := h.CreatePending(r.Context(), svc.ID, claims.UserID, req.GitTag, req.Branch, req.Environment, req.Strategy, req.Description)
 	if err != nil {
@@ -176,9 +180,14 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "failed to dispatch workflow")
 		return
 	}
+	inProgress, err := h.releases.UpdateStatus(r.Context(), created.ID, "in_progress")
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "internal error")
+		return
+	}
 
 	utils.WriteJSON(w, http.StatusAccepted, map[string]any{
-		"release_id": created.ID.String(),
-		"status":     created.Status,
+		"release_id": inProgress.ID.String(),
+		"status":     inProgress.Status,
 	})
 }

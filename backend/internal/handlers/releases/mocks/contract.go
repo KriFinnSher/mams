@@ -110,3 +110,56 @@ func (mr *MockReleaseReaderMockRecorder) ListByService(ctx, serviceID any) *gomo
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByService", reflect.TypeOf((*MockReleaseReader)(nil).ListByService), ctx, serviceID)
 }
+
+// UpdateStatus mocks base method.
+func (m *MockReleaseReader) UpdateStatus(ctx context.Context, id uuid.UUID, status string) (models.Release, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateStatus", ctx, id, status)
+	ret0, _ := ret[0].(models.Release)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateStatus indicates an expected call of UpdateStatus.
+func (mr *MockReleaseReaderMockRecorder) UpdateStatus(ctx, id, status any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateStatus", reflect.TypeOf((*MockReleaseReader)(nil).UpdateStatus), ctx, id, status)
+}
+
+// MockWorkflowDispatcher is a mock of WorkflowDispatcher interface.
+type MockWorkflowDispatcher struct {
+	ctrl     *gomock.Controller
+	recorder *MockWorkflowDispatcherMockRecorder
+	isgomock struct{}
+}
+
+// MockWorkflowDispatcherMockRecorder is the mock recorder for MockWorkflowDispatcher.
+type MockWorkflowDispatcherMockRecorder struct {
+	mock *MockWorkflowDispatcher
+}
+
+// NewMockWorkflowDispatcher creates a new mock instance.
+func NewMockWorkflowDispatcher(ctrl *gomock.Controller) *MockWorkflowDispatcher {
+	mock := &MockWorkflowDispatcher{ctrl: ctrl}
+	mock.recorder = &MockWorkflowDispatcherMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockWorkflowDispatcher) EXPECT() *MockWorkflowDispatcherMockRecorder {
+	return m.recorder
+}
+
+// DispatchWorkflow mocks base method.
+func (m *MockWorkflowDispatcher) DispatchWorkflow(ctx context.Context, repositoryURL, workflowID, ref string, inputs map[string]string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DispatchWorkflow", ctx, repositoryURL, workflowID, ref, inputs)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DispatchWorkflow indicates an expected call of DispatchWorkflow.
+func (mr *MockWorkflowDispatcherMockRecorder) DispatchWorkflow(ctx, repositoryURL, workflowID, ref, inputs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DispatchWorkflow", reflect.TypeOf((*MockWorkflowDispatcher)(nil).DispatchWorkflow), ctx, repositoryURL, workflowID, ref, inputs)
+}
