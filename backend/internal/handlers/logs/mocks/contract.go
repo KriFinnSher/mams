@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	uuid "github.com/google/uuid"
+	auth "github.com/mams/backend/internal/middleware/auth"
 	models "github.com/mams/backend/internal/models"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -186,4 +187,82 @@ func (m *MockOrgGetter) GetSlugByID(ctx context.Context, id uuid.UUID) (string, 
 func (mr *MockOrgGetterMockRecorder) GetSlugByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSlugByID", reflect.TypeOf((*MockOrgGetter)(nil).GetSlugByID), ctx, id)
+}
+
+// MockServiceLister is a mock of ServiceLister interface.
+type MockServiceLister struct {
+	ctrl     *gomock.Controller
+	recorder *MockServiceListerMockRecorder
+	isgomock struct{}
+}
+
+// MockServiceListerMockRecorder is the mock recorder for MockServiceLister.
+type MockServiceListerMockRecorder struct {
+	mock *MockServiceLister
+}
+
+// NewMockServiceLister creates a new mock instance.
+func NewMockServiceLister(ctrl *gomock.Controller) *MockServiceLister {
+	mock := &MockServiceLister{ctrl: ctrl}
+	mock.recorder = &MockServiceListerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockServiceLister) EXPECT() *MockServiceListerMockRecorder {
+	return m.recorder
+}
+
+// ListByOrganization mocks base method.
+func (m *MockServiceLister) ListByOrganization(ctx context.Context, orgID uuid.UUID) ([]models.Service, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListByOrganization", ctx, orgID)
+	ret0, _ := ret[0].([]models.Service)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListByOrganization indicates an expected call of ListByOrganization.
+func (mr *MockServiceListerMockRecorder) ListByOrganization(ctx, orgID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByOrganization", reflect.TypeOf((*MockServiceLister)(nil).ListByOrganization), ctx, orgID)
+}
+
+// MockJWTValidator is a mock of JWTValidator interface.
+type MockJWTValidator struct {
+	ctrl     *gomock.Controller
+	recorder *MockJWTValidatorMockRecorder
+	isgomock struct{}
+}
+
+// MockJWTValidatorMockRecorder is the mock recorder for MockJWTValidator.
+type MockJWTValidatorMockRecorder struct {
+	mock *MockJWTValidator
+}
+
+// NewMockJWTValidator creates a new mock instance.
+func NewMockJWTValidator(ctrl *gomock.Controller) *MockJWTValidator {
+	mock := &MockJWTValidator{ctrl: ctrl}
+	mock.recorder = &MockJWTValidatorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockJWTValidator) EXPECT() *MockJWTValidatorMockRecorder {
+	return m.recorder
+}
+
+// Validate mocks base method.
+func (m *MockJWTValidator) Validate(raw string) (auth.Claims, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Validate", raw)
+	ret0, _ := ret[0].(auth.Claims)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Validate indicates an expected call of Validate.
+func (mr *MockJWTValidatorMockRecorder) Validate(raw any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockJWTValidator)(nil).Validate), raw)
 }

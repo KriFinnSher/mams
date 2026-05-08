@@ -2,6 +2,7 @@ package ws
 
 import (
 	"encoding/json"
+	"log"
 	"sync"
 
 	"github.com/google/uuid"
@@ -30,6 +31,7 @@ func (h *Hub) Join(serviceID uuid.UUID, c *Conn) {
 		h.services[serviceID] = make(map[*Conn]struct{})
 	}
 	h.services[serviceID][c] = struct{}{}
+	log.Printf("WS Hub: joined serviceID=%s, total connections=%d", serviceID.String(), len(h.services[serviceID]))
 }
 
 func (h *Hub) Leave(serviceID uuid.UUID, c *Conn) {
@@ -37,6 +39,7 @@ func (h *Hub) Leave(serviceID uuid.UUID, c *Conn) {
 	defer h.mu.Unlock()
 	if conns, ok := h.services[serviceID]; ok {
 		delete(conns, c)
+		log.Printf("WS Hub: left serviceID=%s, remaining=%d", serviceID.String(), len(conns))
 		if len(conns) == 0 {
 			delete(h.services, serviceID)
 		}
@@ -53,11 +56,14 @@ func (h *Hub) Broadcast(serviceID uuid.UUID, entry models.LogEntry) {
 	defer h.mu.RUnlock()
 
 	if conns, ok := h.services[serviceID]; ok {
+		log.Printf("WS Hub: broadcasting to serviceID=%s, connections=%d, message=%s", serviceID.String(), len(conns), entry.Message)
 		for c := range conns {
 			select {
 			case c.Send <- data:
 			default:
 			}
 		}
+	} else {
+		log.Printf("WS Hub: no connections for serviceID=%s", serviceID.String())
 	}
 }

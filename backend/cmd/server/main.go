@@ -99,7 +99,7 @@ func main() {
 	}
 	kube := kubeclient.NewWithDocker(kubeSet, cfg.DockerRegistry, cfg.DockerUsername, cfg.DockerPassword)
 	releasesH := releaseshandler.NewHandler(services, orgs, releasesRepo, ghClient, kube, cfg.CallbackBaseURL, cfg.DockerHubOwner)
-	logsH := logshandler.NewHandler(logsRepo, kube, services, orgs, hub, logger)
+	logsH := logshandler.NewHandler(logsRepo, kube, services, services, orgs, hub, logger, validator)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/login", func(w http.ResponseWriter, r *http.Request) {
@@ -117,7 +117,7 @@ func main() {
 		}
 		login.Me(w, r)
 	}))
-	protected.Handle("/api/services", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	servicesCollectionHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
 			servicesH.List(w, r)
@@ -126,7 +126,10 @@ func main() {
 		default:
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
-	}))
+	})
+
+	protected.Handle("/api/services", servicesCollectionHandler)
+	protected.Handle("/api/services/", servicesCollectionHandler)
 	protected.Handle("/api/services/{id}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodGet:
@@ -154,13 +157,13 @@ func main() {
 		}
 		logsH.Get(w, r)
 	})))
-	protected.Handle("/api/services/{id}/logs/stream", rbacmw.RequireLogsAccess(services, access, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	protected.Handle("/api/services/{id}/logs/stream", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
 		logsH.Stream(w, r)
-	})))
+	}))
 	protected.Handle("/api/services/{id}/metrics", rbacmw.RequireMetricsAccess(services, access, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -204,6 +207,14 @@ func main() {
 		releasesH.RollbackCandidates(w, r)
 	})))
 	mux.Handle("/api/", authmw.RequireAuth(validator, protected))
+
+	mux.HandleFunc("/ws/services/{id}/logs", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		logsH.Stream(w, r)
+	})
 
 	mux.HandleFunc("/api/internal/services/{id}/logs", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {

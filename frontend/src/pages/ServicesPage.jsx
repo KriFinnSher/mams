@@ -28,7 +28,7 @@ export function ServicesPage() {
       const token = localStorage.getItem("mams_token");
       if (!token) return setStatus("Ошибка авторизации.");
       try {
-        const response = await fetch("/api/services", {
+        const response = await fetch("/api/services/", {
           headers: { Authorization: `Bearer ${token}` },
           cache: "no-store",
         });

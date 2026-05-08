@@ -27,7 +27,7 @@ export function NewServicePage() {
     };
     setStatus("Создание сервиса...");
     try {
-      const response = await fetch("/api/services", {
+      const response = await fetch("/api/services/", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(payload),

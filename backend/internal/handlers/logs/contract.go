@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/mams/backend/internal/middleware/auth"
 	"github.com/mams/backend/internal/models"
 )
 
@@ -24,5 +25,13 @@ type ServiceGetter interface {
 
 type OrgGetter interface {
 	GetSlugByID(ctx context.Context, id uuid.UUID) (string, error)
+}
+
+type ServiceLister interface {
+	ListByOrganization(ctx context.Context, orgID uuid.UUID) ([]models.Service, error)
+}
+
+type JWTValidator interface {
+	Validate(raw string) (auth.Claims, error)
 }
 

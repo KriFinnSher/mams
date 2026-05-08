@@ -202,7 +202,6 @@ SET
     repository_url = $8,
     default_branch = $9,
     grafana_dashboard_uid = $10,
-    settings = $11,
     updated_at = NOW()
 WHERE id = $1
 RETURNING
@@ -225,7 +224,6 @@ RETURNING
 		s.RepositoryURL,
 		s.DefaultBranch,
 		s.GrafanaDashboardUID,
-		s.Settings,
 	))
 	if err != nil {
 		return models.Service{}, mapServiceErr(err)
