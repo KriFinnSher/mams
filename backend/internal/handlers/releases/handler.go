@@ -381,7 +381,9 @@ func (h *Handler) Rollback(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) applyKubeDeploy(ctx context.Context, svc models.Service, env, strategy, branch, gitTag string) error {
+	log.Printf("applyKubeDeploy: service=%s env=%s strategy=%s", svc.Name, env, strategy)
 	if h.kube == nil {
+		log.Printf("applyKubeDeploy: kube is nil, skipping")
 		return nil
 	}
 	slug := ""
