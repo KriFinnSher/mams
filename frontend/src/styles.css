@@ -540,7 +540,7 @@ h1 {
 .logs-list {
   border: 1px solid #d6dce3;
   border-radius: 8px;
-  max-height: 320px;
+  height: 320px;
   overflow: auto;
 }
 
