@@ -18,3 +18,6 @@ type ReleaseReader interface {
 	Create(ctx context.Context, rel models.Release) (models.Release, error)
 }
 
+type WorkflowDispatcher interface {
+	DispatchWorkflow(ctx context.Context, repositoryURL, workflowID, ref string, inputs map[string]string) error
+}

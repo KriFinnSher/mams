@@ -2,6 +2,8 @@ package releases
 
 import (
 	"context"
+	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,6 +16,16 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+type testWorkflowDispatcher struct {
+	called bool
+	err    error
+}
+
+func (d *testWorkflowDispatcher) DispatchWorkflow(_ context.Context, _, _, _ string, _ map[string]string) error {
+	d.called = true
+	return d.err
+}
+
 func TestGet_Success(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	sr := mocks.NewMockServiceReader(ctrl)
@@ -22,7 +34,7 @@ func TestGet_Success(t *testing.T) {
 	sid := uuid.New()
 	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{ID: sid, OrganizationID: org}, nil)
 	rr.EXPECT().ListByService(gomock.Any(), sid).Return([]models.Release{{ID: uuid.New(), ServiceID: sid}}, nil)
-	h := NewHandler(sr, rr)
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
 	req := httptest.NewRequest(http.MethodGet, "/api/services/"+sid.String()+"/releases", nil)
 	req.SetPathValue("id", sid.String())
 	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: org}))
@@ -45,7 +57,7 @@ func TestCreatePending_Status(t *testing.T) {
 		}
 		return rel, nil
 	})
-	h := NewHandler(sr, rr)
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
 	if _, err := h.CreatePending(context.Background(), sid, uid, "v1", "main", "prod", "rolling", "desc"); err != nil {
 		t.Fatalf("err=%v", err)
 	}
@@ -57,7 +69,7 @@ func TestGet_NotFound(t *testing.T) {
 	rr := mocks.NewMockReleaseReader(ctrl)
 	sid := uuid.New()
 	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{}, postgresrepo.ErrServiceNotFound)
-	h := NewHandler(sr, rr)
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
 	req := httptest.NewRequest(http.MethodGet, "/api/services/"+sid.String()+"/releases", nil)
 	req.SetPathValue("id", sid.String())
 	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: uuid.New()}))
@@ -68,3 +80,57 @@ func TestGet_NotFound(t *testing.T) {
 	}
 }
 
+func TestDeploy_Success(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sr := mocks.NewMockServiceReader(ctrl)
+	rr := mocks.NewMockReleaseReader(ctrl)
+	wd := &testWorkflowDispatcher{}
+	org := uuid.New()
+	sid := uuid.New()
+	uid := uuid.New()
+	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{
+		ID: sid, OrganizationID: org, RepositoryURL: "https://github.com/acme/repo", DefaultBranch: "main",
+	}, nil)
+	rr.EXPECT().Create(gomock.Any(), gomock.Any()).DoAndReturn(func(_ context.Context, rel models.Release) (models.Release, error) {
+		rel.ID = uuid.New()
+		rel.Status = "pending"
+		if rel.AuthorUserID != uid {
+			t.Fatalf("author mismatch")
+		}
+		return rel, nil
+	})
+	h := NewHandler(sr, rr, wd)
+	body, _ := json.Marshal(map[string]any{"environment": "dev", "strategy": "rolling", "branch": "main"})
+	req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/deploy", bytes.NewReader(body))
+	req.SetPathValue("id", sid.String())
+	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: org, UserID: uid}))
+	rec := httptest.NewRecorder()
+	h.Deploy(rec, req)
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if !wd.called {
+		t.Fatalf("workflow not called")
+	}
+}
+
+func TestDeploy_InvalidBody(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sr := mocks.NewMockServiceReader(ctrl)
+	rr := mocks.NewMockReleaseReader(ctrl)
+	wd := &testWorkflowDispatcher{}
+	org := uuid.New()
+	sid := uuid.New()
+	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{
+		ID: sid, OrganizationID: org, RepositoryURL: "https://github.com/acme/repo", DefaultBranch: "main",
+	}, nil)
+	h := NewHandler(sr, rr, wd)
+	req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/deploy", bytes.NewReader([]byte("{")))
+	req.SetPathValue("id", sid.String())
+	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: org, UserID: uuid.New()}))
+	rec := httptest.NewRecorder()
+	h.Deploy(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}

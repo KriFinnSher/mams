@@ -83,7 +83,7 @@ func main() {
 	logsH := logshandler.NewHandler(logsRepo, hub, logger)
 	metricsH := metricshandler.NewHandler(services, cfg.GrafanaURL)
 	contractsH := contractshandler.NewHandler(services, ghClient)
-	releasesH := releaseshandler.NewHandler(services, releasesRepo)
+	releasesH := releaseshandler.NewHandler(services, releasesRepo, ghClient)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/login", func(w http.ResponseWriter, r *http.Request) {
@@ -166,6 +166,13 @@ func main() {
 		}
 		releasesH.Get(w, r)
 	}))
+	protected.Handle("/api/services/{id}/deploy", rbacmw.RequireReleaseManageAccess(services, access, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		releasesH.Deploy(w, r)
+	})))
 	mux.Handle("/api/", authmw.RequireAuth(validator, protected))
 
 	mux.HandleFunc("/api/internal/services/{id}/logs", func(w http.ResponseWriter, r *http.Request) {
