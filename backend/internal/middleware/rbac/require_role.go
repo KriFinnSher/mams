@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	authmw "github.com/mams/backend/internal/middleware/auth"
 	"github.com/mams/backend/internal/models"
+	postgresrepo "github.com/mams/backend/internal/repository/postgres"
 	rbaccore "github.com/mams/backend/internal/rbac"
 	"github.com/mams/backend/internal/utils"
 )
@@ -36,7 +37,7 @@ func RequireAtLeastRole(minRole string, services serviceReader, access accessRea
 		a, err := access.GetByServiceAndUser(r.Context(), serviceID, claims.UserID)
 		if err == nil {
 			role = rbaccore.EffectiveRole(svc.OwnerUserID, claims.UserID, a.Role)
-		} else if errors.Is(err, ErrAccessNotFound) {
+		} else if errors.Is(err, ErrAccessNotFound) || errors.Is(err, postgresrepo.ErrServiceAccessNotFound) {
 			role = rbaccore.EffectiveRole(svc.OwnerUserID, claims.UserID, "")
 		} else {
 			utils.WriteError(w, http.StatusInternalServerError, "internal error")

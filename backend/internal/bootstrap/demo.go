@@ -23,10 +23,6 @@ func SeedDemo(ctx context.Context, pool *pgxpool.Pool) error {
 	if err != nil {
 		return err
 	}
-	observerID, err := upsertUser(ctx, pool, "observer", "observer", orgID)
-	if err != nil {
-		return err
-	}
 
 	serviceID, err := upsertService(ctx, pool, orgID, ownerID)
 	if err != nil {
@@ -35,10 +31,6 @@ func SeedDemo(ctx context.Context, pool *pgxpool.Pool) error {
 	if err := upsertServiceAccess(ctx, pool, serviceID, devID, "developer"); err != nil {
 		return err
 	}
-	if err := upsertServiceAccess(ctx, pool, serviceID, observerID, "observer"); err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -84,7 +76,7 @@ INSERT INTO services (
     responsible_team_ref, importance, repository_url, default_branch, grafana_dashboard_uid, settings
 )
 VALUES (
-    $1, $2, $3, 'user-service', 'demo user service', 'backend', 'v1.0.0',
+    $1, $2, $3, 'user-service', 'demo user service', 'business', 'v1.0.0',
     80, true, 70, false,
     '@infra-team', 'high', 'https://github.com/example/user-service', 'main', 'demo-user-service',
     '{"minimum_test_coverage_enabled": true, "minimum_test_coverage": 70}'::jsonb
