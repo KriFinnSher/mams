@@ -23,12 +23,22 @@ func SeedDemo(ctx context.Context, pool *pgxpool.Pool) error {
 	if err != nil {
 		return err
 	}
+	observerID, err := upsertUser(ctx, pool, "observer", "observer", orgID)
+	if err != nil {
+		return err
+	}
 
 	serviceID, err := upsertService(ctx, pool, orgID, ownerID)
 	if err != nil {
 		return err
 	}
 	if err := upsertServiceAccess(ctx, pool, serviceID, devID, "developer"); err != nil {
+		return err
+	}
+	if err := upsertServiceAccess(ctx, pool, serviceID, observerID, "observer"); err != nil {
+		return err
+	}
+	if err := seedDemoReleases(ctx, pool, serviceID, ownerID); err != nil {
 		return err
 	}
 	return nil
@@ -100,6 +110,38 @@ DO UPDATE SET role = EXCLUDED.role
 `, serviceID, userID, role)
 	if err != nil {
 		return fmt.Errorf("upsert service access: %w", err)
+	}
+	return nil
+}
+
+func seedDemoReleases(ctx context.Context, pool *pgxpool.Pool, serviceID, authorID uuid.UUID) error {
+	entries := []struct {
+		tag         string
+		branch      string
+		environment string
+		strategy    string
+		status      string
+		description string
+		offset      string
+	}{
+		{"v1.2.2", "main", "prod", "rolling", "success", "stable release", "4 days"},
+		{"v1.2.3", "main", "prod", "rolling", "success", "minor fixes", "2 days"},
+		{"v1.2.4", "main", "prod", "canary", "failed", "canary check failed", "1 day"},
+		{"v1.2.3", "main", "prod", "rollback", "success", "rollback to stable", "12 hours"},
+	}
+	for _, e := range entries {
+		_, err := pool.Exec(ctx, `
+INSERT INTO releases (service_id, git_tag, branch, environment, strategy, status, description, author_user_id, deployed_at)
+SELECT $1, $2, $3, $4, $5, $6, $7, $8, NOW() - ($9::interval)
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM releases
+    WHERE service_id = $1 AND git_tag = $2 AND strategy = $5 AND description = $7
+)
+`, serviceID, e.tag, e.branch, e.environment, e.strategy, e.status, e.description, authorID, e.offset)
+		if err != nil {
+			return fmt.Errorf("seed demo releases: %w", err)
+		}
 	}
 	return nil
 }
