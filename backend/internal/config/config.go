@@ -20,6 +20,7 @@ type Config struct {
 	MongoLogsCollection string
 	GrafanaURL string
 	GitHubToken string
+	KubeConfigPath string
 	JWTSecret string
 	JWTTTL    time.Duration
 }
@@ -66,6 +67,7 @@ func Get() *Config {
 			grafanaURL = "http://localhost:3001"
 		}
 		gitHubToken := os.Getenv("GITHUB_TOKEN")
+		kubeConfigPath := os.Getenv("KUBE_CONFIG_PATH")
 
 		cfg = &Config{
 			HTTPHost:  httpHost,
@@ -76,6 +78,7 @@ func Get() *Config {
 			MongoLogsCollection: mongoLogsCollection,
 			GrafanaURL: grafanaURL,
 			GitHubToken: gitHubToken,
+			KubeConfigPath: kubeConfigPath,
 			JWTSecret: jwtSecret,
 			JWTTTL:    utils.ParseTTLSeconds(os.Getenv("JWT_TTL"), 3600),
 		}
