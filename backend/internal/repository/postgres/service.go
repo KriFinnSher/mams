@@ -55,13 +55,18 @@ func NewServiceRepositoryPool(pool *pgxpool.Pool) *ServiceRepository {
 }
 
 func (r *ServiceRepository) Create(ctx context.Context, s models.Service) (models.Service, error) {
+	rawSettings, err := json.Marshal(s.Settings)
+	if err != nil {
+		return models.Service{}, err
+	}
+
 	const q = `
 INSERT INTO services (
     organization_id, created_by_user_id, owner_user_id, name, description, type, version,
     test_coverage, minimum_test_coverage_enabled, minimum_test_coverage, pii_sensitive,
     responsible_team_ref, importance, repository_url, default_branch, grafana_dashboard_uid, settings
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17::jsonb)
 RETURNING
     id, organization_id, created_by_user_id, owner_user_id, name, description, type, version,
     test_coverage, minimum_test_coverage_enabled, minimum_test_coverage, pii_sensitive,
@@ -88,7 +93,7 @@ RETURNING
 		s.RepositoryURL,
 		s.DefaultBranch,
 		s.GrafanaDashboardUID,
-		s.Settings,
+		string(rawSettings),
 	))
 	if err != nil {
 		return models.Service{}, err

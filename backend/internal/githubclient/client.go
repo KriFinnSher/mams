@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strings"
@@ -200,7 +201,8 @@ func (c *Client) DispatchWorkflow(ctx context.Context, repositoryURL, workflowID
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusNoContent {
-		return fmt.Errorf("github api status: %d", resp.StatusCode)
+		raw, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return fmt.Errorf("github api status: %d body: %s", resp.StatusCode, strings.TrimSpace(string(raw)))
 	}
 
 	return nil

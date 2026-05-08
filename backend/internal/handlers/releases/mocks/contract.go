@@ -57,6 +57,45 @@ func (mr *MockServiceReaderMockRecorder) GetByID(ctx, id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockServiceReader)(nil).GetByID), ctx, id)
 }
 
+// MockOrganizationReader is a mock of OrganizationReader interface.
+type MockOrganizationReader struct {
+	ctrl     *gomock.Controller
+	recorder *MockOrganizationReaderMockRecorder
+	isgomock struct{}
+}
+
+// MockOrganizationReaderMockRecorder is the mock recorder for MockOrganizationReader.
+type MockOrganizationReaderMockRecorder struct {
+	mock *MockOrganizationReader
+}
+
+// NewMockOrganizationReader creates a new mock instance.
+func NewMockOrganizationReader(ctrl *gomock.Controller) *MockOrganizationReader {
+	mock := &MockOrganizationReader{ctrl: ctrl}
+	mock.recorder = &MockOrganizationReaderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockOrganizationReader) EXPECT() *MockOrganizationReaderMockRecorder {
+	return m.recorder
+}
+
+// GetSlugByID mocks base method.
+func (m *MockOrganizationReader) GetSlugByID(ctx context.Context, id uuid.UUID) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSlugByID", ctx, id)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSlugByID indicates an expected call of GetSlugByID.
+func (mr *MockOrganizationReaderMockRecorder) GetSlugByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSlugByID", reflect.TypeOf((*MockOrganizationReader)(nil).GetSlugByID), ctx, id)
+}
+
 // MockReleaseReader is a mock of ReleaseReader interface.
 type MockReleaseReader struct {
 	ctrl     *gomock.Controller

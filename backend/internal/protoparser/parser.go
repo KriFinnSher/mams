@@ -16,20 +16,20 @@ var (
 )
 
 type Contract struct {
-	ServiceName string
-	Methods     []Method
+	ServiceName string   `json:"service_name"`
+	Methods     []Method `json:"methods"`
 }
 
 type Method struct {
-	Name       string
-	Input      string
-	Output     string
-	Parameters []Parameter
+	Name       string      `json:"name"`
+	Input      string      `json:"input"`
+	Output     string      `json:"output"`
+	Parameters []Parameter `json:"parameters"`
 }
 
 type Parameter struct {
-	Name string
-	Type string
+	Name string `json:"name"`
+	Type string `json:"type"`
 }
 
 func ParseProjectProto(src []byte) (Contract, error) {
@@ -99,4 +99,3 @@ func stripComments(s string) string {
 	}
 	return strings.Join(lines, "\n")
 }
-

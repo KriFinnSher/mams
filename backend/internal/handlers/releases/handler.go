@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -16,13 +17,14 @@ import (
 
 type Handler struct {
 	services ServiceReader
+	orgs     OrganizationReader
 	releases ReleaseReader
 	workflows WorkflowDispatcher
 	kube     KubeDeployer
 }
 
-func NewHandler(services ServiceReader, releases ReleaseReader, workflows WorkflowDispatcher, kube KubeDeployer) *Handler {
-	return &Handler{services: services, releases: releases, workflows: workflows, kube: kube}
+func NewHandler(services ServiceReader, orgs OrganizationReader, releases ReleaseReader, workflows WorkflowDispatcher, kube KubeDeployer) *Handler {
+	return &Handler{services: services, orgs: orgs, releases: releases, workflows: workflows, kube: kube}
 }
 
 func (h *Handler) CreatePending(
@@ -235,6 +237,10 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := h.applyKubeDeploy(r.Context(), svc, req.Environment, req.Strategy, req.Branch, req.GitTag); err != nil {
+		log.Printf(
+			"apply kube deploy failed: service_id=%s org_id=%s env=%s strategy=%s branch=%s git_tag=%s err=%v",
+			svc.ID.String(), svc.OrganizationID.String(), req.Environment, req.Strategy, req.Branch, req.GitTag, err,
+		)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to apply kubernetes rollout")
 		return
 	}
@@ -250,20 +256,26 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 		ref = req.GitTag
 	}
 	inputs := map[string]string{
-		"service_id":   svc.ID.String(),
 		"environment":  req.Environment,
 		"strategy":     req.Strategy,
-		"description":  req.Description,
 		"release_id":   created.ID.String(),
+		"ref_name":     ref,
+		"mams_callback_url": "http://host.docker.internal:8081/api/internal/releases/status",
+	}
+	if req.GitTag != "" {
+		inputs["ref_type"] = "tag"
+	} else {
+		inputs["ref_type"] = "branch"
 	}
 	if req.GitTag != "" {
 		inputs["git_tag"] = req.GitTag
 	}
-	if req.Branch != "" {
-		inputs["branch"] = req.Branch
-	}
 
 	if err := h.workflows.DispatchWorkflow(r.Context(), svc.RepositoryURL, "deploy.yml", ref, inputs); err != nil {
+		log.Printf(
+			"dispatch workflow failed: service_id=%s repo=%s workflow=%s ref=%s env=%s strategy=%s err=%v",
+			svc.ID.String(), svc.RepositoryURL, "deploy.yml", ref, req.Environment, req.Strategy, err,
+		)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to dispatch workflow")
 		return
 	}
@@ -321,6 +333,10 @@ func (h *Handler) Rollback(w http.ResponseWriter, r *http.Request) {
 		req.Environment = "prod"
 	}
 	if err := h.applyKubeRollback(r.Context(), svc, req.Environment, req.GitTag); err != nil {
+		log.Printf(
+			"apply kube rollback failed: service_id=%s org_id=%s env=%s git_tag=%s err=%v",
+			svc.ID.String(), svc.OrganizationID.String(), req.Environment, req.GitTag, err,
+		)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to apply kubernetes rollback")
 		return
 	}
@@ -332,15 +348,20 @@ func (h *Handler) Rollback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	inputs := map[string]string{
-		"service_id":  svc.ID.String(),
 		"environment": req.Environment,
 		"strategy":    "rollback",
-		"description": req.Description,
 		"release_id":  created.ID.String(),
+		"ref_type":    "tag",
+		"ref_name":    req.GitTag,
+		"mams_callback_url": "http://host.docker.internal:8081/api/internal/releases/status",
 		"git_tag":     req.GitTag,
 		"rollback":    "true",
 	}
 	if err := h.workflows.DispatchWorkflow(r.Context(), svc.RepositoryURL, "deploy.yml", req.GitTag, inputs); err != nil {
+		log.Printf(
+			"dispatch rollback workflow failed: service_id=%s repo=%s workflow=%s ref=%s env=%s err=%v",
+			svc.ID.String(), svc.RepositoryURL, "deploy.yml", req.GitTag, req.Environment, err,
+		)
 		utils.WriteError(w, http.StatusInternalServerError, "failed to dispatch workflow")
 		return
 	}
@@ -360,7 +381,15 @@ func (h *Handler) applyKubeDeploy(ctx context.Context, svc models.Service, env, 
 	if h.kube == nil {
 		return nil
 	}
-	namespace := env
+	slug := ""
+	if h.orgs != nil {
+		got, err := h.orgs.GetSlugByID(ctx, svc.OrganizationID)
+		if err != nil {
+			return err
+		}
+		slug = got
+	}
+	namespace := utils.BuildNamespace(slug, env)
 	deployment := svc.Name
 	container := "app"
 	imageRef := branch
@@ -386,7 +415,15 @@ func (h *Handler) applyKubeRollback(ctx context.Context, svc models.Service, env
 	if h.kube == nil {
 		return nil
 	}
-	namespace := env
+	slug := ""
+	if h.orgs != nil {
+		got, err := h.orgs.GetSlugByID(ctx, svc.OrganizationID)
+		if err != nil {
+			return err
+		}
+		slug = got
+	}
+	namespace := utils.BuildNamespace(slug, env)
 	deployment := svc.Name
 	container := "app"
 	image := svc.RepositoryURL + ":" + gitTag

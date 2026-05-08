@@ -2,6 +2,24 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { NavBar } from "../components/NavBar";
 
+function normalizeContractMethod(method) {
+  const params = Array.isArray(method?.parameters)
+    ? method.parameters
+    : Array.isArray(method?.Parameters)
+      ? method.Parameters
+      : [];
+  return {
+    name: method?.name ?? method?.Name ?? "",
+    input: method?.input ?? method?.Input ?? "",
+    output: method?.output ?? method?.Output ?? "",
+    parameters: params.map((p) => ({
+      name: p?.name ?? p?.Name ?? "",
+      type: p?.type ?? p?.Type ?? "",
+      children: Array.isArray(p?.children) ? p.children : [],
+    })),
+  };
+}
+
 function renderContractTree(rows, depth = 0) {
   if (!Array.isArray(rows) || rows.length === 0) return null;
   return rows.map((row, idx) => {
@@ -193,7 +211,8 @@ export function ServicePage() {
         if (!resp.ok) return setContractsStatus("Не удалось загрузить контракты.");
         const data = await resp.json();
         if (cancelled) return;
-        const list = Array.isArray(data?.methods) ? data.methods : [];
+        const raw = Array.isArray(data?.methods) ? data.methods : [];
+        const list = raw.map(normalizeContractMethod);
         setContracts(list);
         setOpenContractPanels({});
         setContractsStatus(list.length === 0 ? "Контракты не найдены." : "");

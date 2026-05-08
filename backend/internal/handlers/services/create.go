@@ -43,6 +43,10 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		RepositoryURL:              req.RepositoryURL,
 		DefaultBranch:              req.DefaultBranch,
 		GrafanaDashboardUID:        req.GrafanaDashboardUID,
+		Settings: map[string]any{
+			"minimum_test_coverage_enabled": req.MinimumTestCoverageEnabled,
+			"minimum_test_coverage":         req.MinimumTestCoverage,
+		},
 	})
 	if err != nil {
 		h.log.ErrorCtx(r.Context(), "create service failed", "err", err, "name", req.Name)

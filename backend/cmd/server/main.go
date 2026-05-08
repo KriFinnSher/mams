@@ -64,6 +64,7 @@ func main() {
 	}
 
 	users := postgresrepo.NewUserRepository(pool)
+	orgs := postgresrepo.NewOrganizationRepository(pool)
 	services := postgresrepo.NewServiceRepositoryPool(pool)
 	access := postgresrepo.NewServiceAccessRepositoryPool(pool)
 	profile := postgresrepo.NewProfileReader(users, services)
@@ -98,7 +99,7 @@ func main() {
 		log.Fatalf("create kubernetes client: %v", err)
 	}
 	kube := kubeclient.New(kubeSet)
-	releasesH := releaseshandler.NewHandler(services, releasesRepo, ghClient, kube)
+	releasesH := releaseshandler.NewHandler(services, orgs, releasesRepo, ghClient, kube)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/login", func(w http.ResponseWriter, r *http.Request) {
