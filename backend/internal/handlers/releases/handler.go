@@ -138,6 +138,10 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 	if req.Strategy == "" {
 		req.Strategy = "rolling"
 	}
+	if (req.Environment == "dev" || req.Environment == "staging") && req.Branch == "" {
+		utils.WriteError(w, http.StatusBadRequest, "branch is required for dev/staging deploy")
+		return
+	}
 
 	created, err := h.CreatePending(r.Context(), svc.ID, claims.UserID, req.GitTag, req.Branch, req.Environment, req.Strategy, req.Description)
 	if err != nil {

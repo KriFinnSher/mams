@@ -134,3 +134,29 @@ func TestDeploy_InvalidBody(t *testing.T) {
 		t.Fatalf("status=%d", rec.Code)
 	}
 }
+
+func TestDeploy_BranchRequiredForDevStaging(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sr := mocks.NewMockServiceReader(ctrl)
+	rr := mocks.NewMockReleaseReader(ctrl)
+	wd := &testWorkflowDispatcher{}
+	org := uuid.New()
+	sid := uuid.New()
+	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{
+		ID: sid, OrganizationID: org, RepositoryURL: "https://github.com/acme/repo", DefaultBranch: "main",
+	}, nil).Times(2)
+	h := NewHandler(sr, rr, wd)
+
+	cases := []string{"dev", "staging"}
+	for _, env := range cases {
+		body, _ := json.Marshal(map[string]any{"environment": env, "strategy": "rolling", "branch": ""})
+		req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/deploy", bytes.NewReader(body))
+		req.SetPathValue("id", sid.String())
+		req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: org, UserID: uuid.New()}))
+		rec := httptest.NewRecorder()
+		h.Deploy(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("env=%s status=%d", env, rec.Code)
+		}
+	}
+}
