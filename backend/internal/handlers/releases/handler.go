@@ -21,10 +21,11 @@ type Handler struct {
 	releases ReleaseReader
 	workflows WorkflowDispatcher
 	kube     KubeDeployer
+	callbackURL string
 }
 
-func NewHandler(services ServiceReader, orgs OrganizationReader, releases ReleaseReader, workflows WorkflowDispatcher, kube KubeDeployer) *Handler {
-	return &Handler{services: services, orgs: orgs, releases: releases, workflows: workflows, kube: kube}
+func NewHandler(services ServiceReader, orgs OrganizationReader, releases ReleaseReader, workflows WorkflowDispatcher, kube KubeDeployer, callbackURL string) *Handler {
+	return &Handler{services: services, orgs: orgs, releases: releases, workflows: workflows, kube: kube, callbackURL: callbackURL}
 }
 
 func (h *Handler) CreatePending(
@@ -260,7 +261,7 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 		"strategy":     req.Strategy,
 		"release_id":   created.ID.String(),
 		"ref_name":     ref,
-		"mams_callback_url": "http://host.docker.internal:8081/api/internal/releases/status",
+		"mams_callback_url": h.callbackURL + "/api/internal/releases/status",
 	}
 	if req.GitTag != "" {
 		inputs["ref_type"] = "tag"
@@ -353,7 +354,7 @@ func (h *Handler) Rollback(w http.ResponseWriter, r *http.Request) {
 		"release_id":  created.ID.String(),
 		"ref_type":    "tag",
 		"ref_name":    req.GitTag,
-		"mams_callback_url": "http://host.docker.internal:8081/api/internal/releases/status",
+		"mams_callback_url": h.callbackURL + "/api/internal/releases/status",
 		"git_tag":     req.GitTag,
 		"rollback":    "true",
 	}

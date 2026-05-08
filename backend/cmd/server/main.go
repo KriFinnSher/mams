@@ -99,7 +99,7 @@ func main() {
 		log.Fatalf("create kubernetes client: %v", err)
 	}
 	kube := kubeclient.New(kubeSet)
-	releasesH := releaseshandler.NewHandler(services, orgs, releasesRepo, ghClient, kube)
+	releasesH := releaseshandler.NewHandler(services, orgs, releasesRepo, ghClient, kube, cfg.CallbackBaseURL)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/login", func(w http.ResponseWriter, r *http.Request) {

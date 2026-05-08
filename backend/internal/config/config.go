@@ -23,6 +23,7 @@ type Config struct {
 	KubeConfigPath string
 	JWTSecret string
 	JWTTTL    time.Duration
+	CallbackBaseURL string
 }
 
 var (
@@ -68,6 +69,10 @@ func Get() *Config {
 		}
 		gitHubToken := os.Getenv("GITHUB_TOKEN")
 		kubeConfigPath := os.Getenv("KUBE_CONFIG_PATH")
+		callbackBaseURL := os.Getenv("CALLBACK_BASE_URL")
+		if callbackBaseURL == "" {
+			callbackBaseURL = "http://host.docker.internal:8081"
+		}
 
 		cfg = &Config{
 			HTTPHost:  httpHost,
@@ -81,6 +86,7 @@ func Get() *Config {
 			KubeConfigPath: kubeConfigPath,
 			JWTSecret: jwtSecret,
 			JWTTTL:    utils.ParseTTLSeconds(os.Getenv("JWT_TTL"), 3600),
+			CallbackBaseURL: callbackBaseURL,
 		}
 	})
 
