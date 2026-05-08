@@ -187,3 +187,25 @@ func TestDeploy_UsesDefaultBranchFallbackForProd(t *testing.T) {
 		t.Fatalf("workflow not called")
 	}
 }
+
+func TestDeploy_GitTagRequiredForProd(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	sr := mocks.NewMockServiceReader(ctrl)
+	rr := mocks.NewMockReleaseReader(ctrl)
+	wd := &testWorkflowDispatcher{}
+	org := uuid.New()
+	sid := uuid.New()
+	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{
+		ID: sid, OrganizationID: org, RepositoryURL: "https://github.com/acme/repo", DefaultBranch: "main",
+	}, nil)
+	h := NewHandler(sr, rr, wd)
+	body, _ := json.Marshal(map[string]any{"environment": "prod", "strategy": "rolling", "branch": "main", "git_tag": ""})
+	req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/deploy", bytes.NewReader(body))
+	req.SetPathValue("id", sid.String())
+	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: org, UserID: uuid.New()}))
+	rec := httptest.NewRecorder()
+	h.Deploy(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status=%d", rec.Code)
+	}
+}

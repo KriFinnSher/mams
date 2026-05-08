@@ -139,6 +139,10 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 	if req.Strategy == "" {
 		req.Strategy = "rolling"
 	}
+	if req.Environment == "prod" && req.GitTag == "" {
+		utils.WriteError(w, http.StatusBadRequest, "git_tag is required for prod deploy")
+		return
+	}
 	if (req.Environment == "dev" || req.Environment == "staging") && originalBranch == "" {
 		utils.WriteError(w, http.StatusBadRequest, "branch is required for dev/staging deploy")
 		return
