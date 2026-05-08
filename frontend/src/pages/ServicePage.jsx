@@ -548,10 +548,8 @@ export function ServicePage() {
                     {contractsStatus && <p className="status">{contractsStatus}</p>}
                     <div className="contracts-pane">
                     {contracts.map((m, idx) => {
-                      const inKey = `${m.name || idx}:in`;
-                      const outKey = `${m.name || idx}:out`;
-                      const inOpen = Boolean(openContractPanels[inKey]);
-                      const outOpen = Boolean(openContractPanels[outKey]);
+                      const inOpen = openContractPanels[m.name || idx] === "in";
+                      const outOpen = openContractPanels[m.name || idx] === "out";
                       return (
                       <div key={`${m.name || "m"}-${idx}`} className="contract-method">
                         <div className="contract-method-head">
@@ -560,14 +558,24 @@ export function ServicePage() {
                             <button
                               type="button"
                               className={inOpen ? "contract-io-btn active" : "contract-io-btn"}
-                              onClick={() => setOpenContractPanels((prev) => ({ ...prev, [inKey]: !prev[inKey] }))}
+                              onClick={() => setOpenContractPanels((prev) => {
+                                const key = m.name || idx;
+                                const next = { ...prev };
+                                next[key] = prev[key] === "in" ? "" : "in";
+                                return next;
+                              })}
                             >
                               IN
                             </button>
                             <button
                               type="button"
                               className={outOpen ? "contract-io-btn active" : "contract-io-btn"}
-                              onClick={() => setOpenContractPanels((prev) => ({ ...prev, [outKey]: !prev[outKey] }))}
+                              onClick={() => setOpenContractPanels((prev) => {
+                                const key = m.name || idx;
+                                const next = { ...prev };
+                                next[key] = prev[key] === "out" ? "" : "out";
+                                return next;
+                              })}
                             >
                               OUT
                             </button>
