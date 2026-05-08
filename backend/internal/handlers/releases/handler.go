@@ -240,14 +240,6 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "minimum test coverage requirement is not met")
 		return
 	}
-	if err := h.applyKubeDeploy(r.Context(), svc, req.Environment, req.Strategy, req.Branch, req.GitTag); err != nil {
-		log.Printf(
-			"apply kube deploy failed: service_id=%s org_id=%s env=%s strategy=%s branch=%s git_tag=%s err=%v",
-			svc.ID.String(), svc.OrganizationID.String(), req.Environment, req.Strategy, req.Branch, req.GitTag, err,
-		)
-		utils.WriteError(w, http.StatusInternalServerError, "failed to apply kubernetes rollout")
-		return
-	}
 
 	created, err := h.CreatePending(r.Context(), svc.ID, claims.UserID, req.GitTag, req.Branch, req.Environment, req.Strategy, req.Description)
 	if err != nil {
@@ -296,7 +288,7 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 		refForDeploy = req.GitTag
 	}
 
-	go h.waitForWorkflowAndDeploy(r.Context(), owner, repo, created.ID, svc, req.Environment, req.Strategy, refForDeploy)
+go h.waitForWorkflowAndDeploy(context.Background(), owner, repo, created.ID, svc, req.Environment, req.Strategy, refForDeploy)
 
 	utils.WriteJSON(w, http.StatusAccepted, map[string]any{
 		"release_id": inProgress.ID.String(),
@@ -529,6 +521,7 @@ func (h *Handler) waitForWorkflowAndDeploy(
 	svc models.Service,
 	env, strategy, ref string,
 ) {
+	log.Printf("START workflow polling: release_id=%s owner=%s repo=%s ref=%s", releaseID.String(), owner, repo, ref)
 	repoURL := svc.RepositoryURL
 	workflowID := "deploy.yml"
 
@@ -544,19 +537,21 @@ func (h *Handler) waitForWorkflowAndDeploy(
 			return
 		case <-timeout:
 			log.Printf("workflow polling timeout: release_id=%s", releaseID.String())
-			h.releases.UpdateStatus(ctx, releaseID, "failed")
+			h.releases.UpdateStatus(context.Background(), releaseID, "failed")
 			return
 		case <-ticker.C:
+			log.Printf("polling workflow: release_id=%s ref=%s", releaseID.String(), ref)
 			run, err := h.workflows.GetLatestWorkflowRun(ctx, repoURL, ref, workflowID)
 			if err != nil {
 				log.Printf("get workflow run error: release_id=%s err=%v", releaseID.String(), err)
 				continue
 			}
+			log.Printf("workflow run status: release_id=%s status=%s conclusion=%s", releaseID.String(), run.Status, run.Conclusion)
 
 			if run.Status == "completed" {
 				if run.Conclusion == "success" {
-					log.Printf("workflow completed successfully: release_id=%s", releaseID.String())
-					image := fmt.Sprintf("docker.io/%s/%s:%s", h.dockerHubOwner, repo, ref)
+					log.Printf("workflow completed successfully: release_id=%s sha=%s", releaseID.String(), run.HeadSHA)
+					image := fmt.Sprintf("docker.io/%s/%s:%s", h.dockerHubOwner, repo, run.HeadSHA)
 					if err := h.deployToK8s(ctx, svc, env, strategy, image); err != nil {
 						log.Printf("k8s deploy failed: release_id=%s err=%v", releaseID.String(), err)
 						h.releases.UpdateStatus(ctx, releaseID, "failed")
@@ -575,7 +570,11 @@ func (h *Handler) waitForWorkflowAndDeploy(
 }
 
 func (h *Handler) deployToK8s(ctx context.Context, svc models.Service, env, strategy, image string) error {
-	namespace := fmt.Sprintf("ns-%s-%s", extractRepoOwner(svc.RepositoryURL), env)
+	slug, err := h.orgs.GetSlugByID(ctx, svc.OrganizationID)
+	if err != nil {
+		return fmt.Errorf("get organization slug: %w", err)
+	}
+	namespace := utils.BuildNamespace(slug, env)
 	switch strategy {
 	case "recreate":
 		return h.kube.UpgradeRecreate(ctx, namespace, svc.Name, "app", image)

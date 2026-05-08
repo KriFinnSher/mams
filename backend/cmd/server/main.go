@@ -84,7 +84,6 @@ func main() {
 	hub := ws.NewHub()
 	login := authhandler.NewLoginHandler(profile, issuer, logger)
 	servicesH := serviceshandler.NewHandler(services, logger)
-	logsH := logshandler.NewHandler(logsRepo, hub, logger)
 	metricsH := metricshandler.NewHandler(services, cfg.GrafanaURL)
 	contractsH := contractshandler.NewHandler(services, ghClient)
 	if cfg.KubeConfigPath == "" {
@@ -100,6 +99,7 @@ func main() {
 	}
 	kube := kubeclient.NewWithDocker(kubeSet, cfg.DockerRegistry, cfg.DockerUsername, cfg.DockerPassword)
 	releasesH := releaseshandler.NewHandler(services, orgs, releasesRepo, ghClient, kube, cfg.CallbackBaseURL, cfg.DockerHubOwner)
+	logsH := logshandler.NewHandler(logsRepo, kube, services, orgs, hub, logger)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/login", func(w http.ResponseWriter, r *http.Request) {

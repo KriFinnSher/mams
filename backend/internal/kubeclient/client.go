@@ -327,3 +327,51 @@ Ports: []corev1.ContainerPort{{ContainerPort: 8083}},
 	_, err := c.kube.AppsV1().Deployments(namespace).Create(ctx, dep, metav1.CreateOptions{})
 	return err
 }
+
+func (c *Client) GetPodLogs(ctx context.Context, namespace, labelSelector string, limit int64) (string, error) {
+	if c == nil || c.kube == nil {
+		return "", fmt.Errorf("kubernetes client is not configured")
+	}
+
+	pods, err := c.kube.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: labelSelector,
+		Limit:        1,
+	})
+	if err != nil {
+		return "", fmt.Errorf("list pods: %w", err)
+	}
+	if len(pods.Items) == 0 {
+		return "", fmt.Errorf("no pods found for label %s in namespace %s", labelSelector, namespace)
+	}
+
+	podName := pods.Items[0].Name
+	logs := c.kube.CoreV1().Pods(namespace).GetLogs(podName, &corev1.PodLogOptions{
+		TailLines: &limit,
+	})
+	result, err := logs.Do(ctx).Raw()
+	if err != nil {
+		return "", fmt.Errorf("get pod logs: %w", err)
+	}
+	return string(result), nil
+}
+
+func (c *Client) GetPodMetrics(ctx context.Context, namespace, deploymentName, port string) (string, error) {
+	if c == nil || c.kube == nil {
+		return "", fmt.Errorf("kubernetes client is not configured")
+	}
+
+	pods, err := c.kube.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: "app=" + deploymentName,
+		FieldSelector: "status.phase=Running",
+	})
+	if err != nil {
+		return "", fmt.Errorf("list pods: %w", err)
+	}
+	if len(pods.Items) == 0 {
+		return "", fmt.Errorf("no running pods found for deployment %s", deploymentName)
+	}
+
+	podName := pods.Items[0].Name
+	log.Printf("GetPodMetrics: namespace=%s pod=%s port=%s", namespace, podName, port)
+	return fmt.Sprintf("metrics from pod %s:%s", podName, port), nil
+}

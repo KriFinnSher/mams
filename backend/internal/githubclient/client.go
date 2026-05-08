@@ -211,6 +211,7 @@ func (c *Client) DispatchWorkflow(ctx context.Context, repositoryURL, workflowID
 type WorkflowRun struct {
 	Conclusion string `json:"conclusion"`
 	Status     string `json:"status"`
+	HeadSHA    string `json:"head_sha"`
 }
 
 func (c *Client) GetLatestWorkflowRun(ctx context.Context, repositoryURL, branch, workflowID string) (*WorkflowRun, error) {

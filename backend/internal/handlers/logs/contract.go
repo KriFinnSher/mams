@@ -14,3 +14,15 @@ type Reader interface {
 	Append(ctx context.Context, serviceID uuid.UUID, env, level, message string) *models.LogEntry
 }
 
+type K8sLogReader interface {
+	GetPodLogs(ctx context.Context, namespace, labelSelector string, limit int64) (string, error)
+}
+
+type ServiceGetter interface {
+	GetByID(ctx context.Context, id uuid.UUID) (models.Service, error)
+}
+
+type OrgGetter interface {
+	GetSlugByID(ctx context.Context, id uuid.UUID) (string, error)
+}
+

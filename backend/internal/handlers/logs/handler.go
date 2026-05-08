@@ -1,10 +1,12 @@
 package logs
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/coder/websocket"
@@ -17,13 +19,16 @@ import (
 )
 
 type Handler struct {
-	logs  Reader
-	wsHub *ws.Hub
-	log   *logx.Logger
+	logs          Reader
+	k8sLogs       K8sLogReader
+	services      ServiceGetter
+	orgs          OrgGetter
+	wsHub         *ws.Hub
+	log           *logx.Logger
 }
 
-func NewHandler(logs Reader, wsHub *ws.Hub, log *logx.Logger) *Handler {
-	return &Handler{logs: logs, wsHub: wsHub, log: log}
+func NewHandler(logs Reader, k8sLogs K8sLogReader, services ServiceGetter, orgs OrgGetter, wsHub *ws.Hub, log *logx.Logger) *Handler {
+	return &Handler{logs: logs, k8sLogs: k8sLogs, services: services, orgs: orgs, wsHub: wsHub, log: log}
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
@@ -43,7 +48,50 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusInternalServerError, "internal error")
 		return
 	}
+
+	if len(list) == 0 && h.k8sLogs != nil {
+		list = h.fetchFromK8s(r.Context(), serviceID)
+	}
+
 	utils.WriteJSON(w, http.StatusOK, map[string]any{"logs": list})
+}
+
+func (h *Handler) fetchFromK8s(ctx context.Context, serviceID uuid.UUID) []models.LogEntry {
+	svc, err := h.services.GetByID(ctx, serviceID)
+	if err != nil {
+		h.log.ErrorCtx(ctx, "fetchFromK8s: get service failed", "err", err)
+		return nil
+	}
+
+	slug, err := h.orgs.GetSlugByID(ctx, svc.OrganizationID)
+	if err != nil {
+		h.log.ErrorCtx(ctx, "fetchFromK8s: get org failed", "err", err)
+		return nil
+	}
+
+	env := "dev"
+	namespace := utils.BuildNamespace(slug, env)
+
+	logs, err := h.k8sLogs.GetPodLogs(ctx, namespace, "app="+svc.Name, 200)
+	if err != nil {
+		h.log.ErrorCtx(ctx, "fetchFromK8s: get pod logs failed", "err", err, "namespace", namespace)
+		return nil
+	}
+
+	var entries []models.LogEntry
+	for _, line := range strings.Split(strings.TrimSpace(logs), "\n") {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		entries = append(entries, models.LogEntry{
+			ServiceID:   serviceID,
+			Environment: env,
+			Level:      "info",
+			Message:    line,
+			Timestamp:  time.Now(),
+		})
+	}
+	return entries
 }
 
 func parseLogFilter(r *http.Request) (models.LogFilter, error) {

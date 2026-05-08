@@ -70,3 +70,120 @@ func (mr *MockReaderMockRecorder) ListByService(ctx, serviceID, filter any) *gom
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListByService", reflect.TypeOf((*MockReader)(nil).ListByService), ctx, serviceID, filter)
 }
+
+// MockK8sLogReader is a mock of K8sLogReader interface.
+type MockK8sLogReader struct {
+	ctrl     *gomock.Controller
+	recorder *MockK8sLogReaderMockRecorder
+	isgomock struct{}
+}
+
+// MockK8sLogReaderMockRecorder is the mock recorder for MockK8sLogReader.
+type MockK8sLogReaderMockRecorder struct {
+	mock *MockK8sLogReader
+}
+
+// NewMockK8sLogReader creates a new mock instance.
+func NewMockK8sLogReader(ctrl *gomock.Controller) *MockK8sLogReader {
+	mock := &MockK8sLogReader{ctrl: ctrl}
+	mock.recorder = &MockK8sLogReaderMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockK8sLogReader) EXPECT() *MockK8sLogReaderMockRecorder {
+	return m.recorder
+}
+
+// GetPodLogs mocks base method.
+func (m *MockK8sLogReader) GetPodLogs(ctx context.Context, namespace, labelSelector string, limit int64) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPodLogs", ctx, namespace, labelSelector, limit)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPodLogs indicates an expected call of GetPodLogs.
+func (mr *MockK8sLogReaderMockRecorder) GetPodLogs(ctx, namespace, labelSelector, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPodLogs", reflect.TypeOf((*MockK8sLogReader)(nil).GetPodLogs), ctx, namespace, labelSelector, limit)
+}
+
+// MockServiceGetter is a mock of ServiceGetter interface.
+type MockServiceGetter struct {
+	ctrl     *gomock.Controller
+	recorder *MockServiceGetterMockRecorder
+	isgomock struct{}
+}
+
+// MockServiceGetterMockRecorder is the mock recorder for MockServiceGetter.
+type MockServiceGetterMockRecorder struct {
+	mock *MockServiceGetter
+}
+
+// NewMockServiceGetter creates a new mock instance.
+func NewMockServiceGetter(ctrl *gomock.Controller) *MockServiceGetter {
+	mock := &MockServiceGetter{ctrl: ctrl}
+	mock.recorder = &MockServiceGetterMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockServiceGetter) EXPECT() *MockServiceGetterMockRecorder {
+	return m.recorder
+}
+
+// GetByID mocks base method.
+func (m *MockServiceGetter) GetByID(ctx context.Context, id uuid.UUID) (models.Service, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByID", ctx, id)
+	ret0, _ := ret[0].(models.Service)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByID indicates an expected call of GetByID.
+func (mr *MockServiceGetterMockRecorder) GetByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockServiceGetter)(nil).GetByID), ctx, id)
+}
+
+// MockOrgGetter is a mock of OrgGetter interface.
+type MockOrgGetter struct {
+	ctrl     *gomock.Controller
+	recorder *MockOrgGetterMockRecorder
+	isgomock struct{}
+}
+
+// MockOrgGetterMockRecorder is the mock recorder for MockOrgGetter.
+type MockOrgGetterMockRecorder struct {
+	mock *MockOrgGetter
+}
+
+// NewMockOrgGetter creates a new mock instance.
+func NewMockOrgGetter(ctrl *gomock.Controller) *MockOrgGetter {
+	mock := &MockOrgGetter{ctrl: ctrl}
+	mock.recorder = &MockOrgGetterMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockOrgGetter) EXPECT() *MockOrgGetterMockRecorder {
+	return m.recorder
+}
+
+// GetSlugByID mocks base method.
+func (m *MockOrgGetter) GetSlugByID(ctx context.Context, id uuid.UUID) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSlugByID", ctx, id)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSlugByID indicates an expected call of GetSlugByID.
+func (mr *MockOrgGetterMockRecorder) GetSlugByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSlugByID", reflect.TypeOf((*MockOrgGetter)(nil).GetSlugByID), ctx, id)
+}
