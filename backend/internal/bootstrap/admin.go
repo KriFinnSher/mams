@@ -43,3 +43,13 @@ ON CONFLICT (login) DO NOTHING
 
 	return nil
 }
+
+func SeedAll(ctx context.Context, pool *pgxpool.Pool) error {
+	if err := SeedAdmin(ctx, pool); err != nil {
+		return err
+	}
+	if err := SeedDemo(ctx, pool); err != nil {
+		return err
+	}
+	return nil
+}

@@ -56,8 +56,8 @@ func main() {
 	if err := migrator.Up(context.Background(), pool, migrationsDir); err != nil {
 		log.Fatalf("run migrations: %v", err)
 	}
-	if err := bootstrap.SeedAdmin(context.Background(), pool); err != nil {
-		log.Fatalf("seed admin: %v", err)
+	if err := bootstrap.SeedAll(context.Background(), pool); err != nil {
+		log.Fatalf("seed data: %v", err)
 	}
 
 	users := postgresrepo.NewUserRepository(pool)
