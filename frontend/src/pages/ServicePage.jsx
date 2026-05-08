@@ -607,7 +607,7 @@ export function ServicePage() {
                     </button>
                   )}
                   {isEditingInfo && (
-                    <form className="service-form" onSubmit={async (event) => {
+                    <form className="service-edit-form" onSubmit={async (event) => {
                       event.preventDefault();
                       const token = localStorage.getItem("mams_token");
                       if (!token) return setSaveStatus("Ошибка авторизации.");
@@ -653,63 +653,84 @@ export function ServicePage() {
                         setSaveStatus("Не удалось сохранить изменения.");
                       }
                     }}>
-                      <label>
-                        Описание
-                        <textarea name="description" rows="3" defaultValue={svc?.overview?.description || ""} />
-                      </label>
+                      <div className="edit-section">
+                        <h3>Основное</h3>
 
-                      <label>
-                        Тип
-                        <select name="type" defaultValue={svc?.overview?.type || "business"}>
-                          <option value="business">business</option>
-                          <option value="composition">composition</option>
-                        </select>
-                      </label>
+                        <label className="edit-field edit-field-full">
+                          <span>Описание</span>
+                          <textarea name="description" rows="3" defaultValue={svc?.overview?.description || ""} />
+                        </label>
 
-                      <label>
-                        Покрытие тестами (%)
-                        <input name="test_coverage" type="number" min="0" max="100" defaultValue={svc?.overview?.test_coverage ?? 0} />
-                      </label>
+                        <div className="edit-grid">
+                          <label className="edit-field">
+                            <span>Тип</span>
+                            <select name="type" defaultValue={svc?.overview?.type || "business"}>
+                              <option value="business">business</option>
+                              <option value="composition">composition</option>
+                            </select>
+                          </label>
 
-                      <label className="checkbox-row">
-                        <input name="pii_sensitive" type="checkbox" defaultChecked={Boolean(svc?.overview?.pii_sensitive)} />
-                        Сервис работает с PII
-                      </label>
+                          <label className="edit-field">
+                            <span>Важность</span>
+                            <select name="importance" defaultValue={svc?.overview?.importance || "medium"}>
+                              <option value="low">low</option>
+                              <option value="medium">medium</option>
+                              <option value="high">high</option>
+                              <option value="critical">critical</option>
+                            </select>
+                          </label>
 
-                      <label>
-                        Ссылка на команду
-                        <input name="responsible_team_ref" type="text" defaultValue={svc?.overview?.responsible_team_ref || ""} />
-                      </label>
+                          <label className="edit-field">
+                            <span>Покрытие тестами (%)</span>
+                            <input name="test_coverage" type="number" min="0" max="100" defaultValue={svc?.overview?.test_coverage ?? 0} />
+                          </label>
 
-                      <label>
-                        Важность
-                        <select name="importance" defaultValue={svc?.overview?.importance || "medium"}>
-                          <option value="low">low</option>
-                          <option value="medium">medium</option>
-                          <option value="high">high</option>
-                          <option value="critical">critical</option>
-                        </select>
-                      </label>
+                          <label className="edit-field">
+                            <span>Ссылка на команду</span>
+                            <input name="responsible_team_ref" type="text" defaultValue={svc?.overview?.responsible_team_ref || ""} />
+                          </label>
+                        </div>
 
-                      <label>
-                        URL репозитория
-                        <input name="repository_url" type="url" defaultValue={svc?.modules?.repository_url || ""} />
-                      </label>
+                        <label className="edit-checkbox">
+                          <input name="pii_sensitive" type="checkbox" defaultChecked={Boolean(svc?.overview?.pii_sensitive)} />
+                          <span>
+                            <strong>Сервис работает с PII</strong>
+                            <small>Отметьте, если сервис обрабатывает персональные данные.</small>
+                          </span>
+                        </label>
+                      </div>
 
-                      <label>
-                        Ветка по умолчанию
-                        <input name="default_branch" type="text" defaultValue={svc?.modules?.default_branch || "main"} />
-                      </label>
+                      <div className="edit-section">
+                        <h3>Интеграции</h3>
 
-                      <label>
-                        UID Grafana dashboard
-                        <input name="grafana_dashboard_uid" type="text" defaultValue={svc?.modules?.grafana_dashboard_uid || ""} />
-                      </label>
-                      <div className="inline-actions">
-                        <button type="submit">Сохранить изменения</button>
-                        <button type="button" className="ghost-btn" onClick={() => {
-                          setIsEditingInfo(false);
-                        }}>
+                        <label className="edit-field edit-field-full">
+                          <span>URL репозитория</span>
+                          <input name="repository_url" type="url" defaultValue={svc?.modules?.repository_url || ""} />
+                        </label>
+
+                        <div className="edit-grid">
+                          <label className="edit-field">
+                            <span>Ветка по умолчанию</span>
+                            <input name="default_branch" type="text" defaultValue={svc?.modules?.default_branch || "main"} />
+                          </label>
+
+                          <label className="edit-field">
+                            <span>UID Grafana dashboard</span>
+                            <input name="grafana_dashboard_uid" type="text" defaultValue={svc?.modules?.grafana_dashboard_uid || ""} />
+                          </label>
+                        </div>
+                      </div>
+
+                      <div className="edit-actions">
+                        <button type="submit" className="edit-primary">Сохранить изменения</button>
+                        <button
+                          type="button"
+                          className="edit-secondary"
+                          onClick={() => {
+                            setSaveStatus("");
+                            setIsEditingInfo(false);
+                          }}
+                        >
                           Отмена
                         </button>
                       </div>
@@ -1045,34 +1066,58 @@ export function ServicePage() {
         </section>
       )}
       {tab === "settings" && (
-        <section className="profile-card">
-          <h2>Настройки</h2>
+        <section className="profile-card settings-card">
+          <div className="settings-head">
+            <div>
+              <h2>Настройки</h2>
+              <p className="settings-subtitle">
+                Управление owner-only параметрами сервиса.
+              </p>
+            </div>
+
+            <span className={settingsEnabled ? "settings-pill enabled" : "settings-pill disabled"}>
+              {settingsEnabled ? "enabled" : "disabled"}
+            </span>
+          </div>
+
           {isObserver ? (
             <p className="status">Вкладка недоступна для роли observer.</p>
           ) : (
             <>
-              <div className="settings-view">
-                <p><strong>Минимальный порог включен:</strong> {settingsEnabled ? "да" : "нет"}</p>
-                <p><strong>Минимальный порог покрытия:</strong> {settingsMinCoverage}%</p>
+              <div className="settings-summary">
+                <div className="settings-summary-card">
+                  <span>Порог покрытия</span>
+                  <strong>{settingsEnabled ? `${settingsMinCoverage}%` : "Выключен"}</strong>
+                </div>
+
+                <div className="settings-summary-card">
+                  <span>Доступ</span>
+                  <strong>{isOwner ? "Полный" : "Только чтение"}</strong>
+                </div>
               </div>
+
               {!isEditingSettings && (
                 <button
                   type="button"
-                  className="edit-btn"
+                  className="settings-edit-btn"
                   disabled={isDeveloper}
                   onClick={() => {
                     setSettingsStatus("");
                     setIsEditingSettings(true);
                   }}
                 >
-                  Редактировать
+                  Редактировать настройки
                 </button>
               )}
+
               {isDeveloper && (
-                <p className="status">Режим только чтение: owner-only настройки может менять только Service Owner.</p>
+                <p className="settings-note">
+                  Owner-only настройки может менять только Service Owner.
+                </p>
               )}
+
               {isEditingSettings && (
-                <form className="inline-form settings-form" onSubmit={async (event) => {
+                <form className="settings-edit-form" onSubmit={async (event) => {
                   event.preventDefault();
                   if (!isOwner) return setSettingsStatus("Изменение owner-only настроек доступно только Service Owner.");
                   const token = localStorage.getItem("mams_token");
@@ -1090,37 +1135,39 @@ export function ServicePage() {
                       body: JSON.stringify(payload),
                     });
                     if (!resp.ok) return setSettingsStatus("Не удалось сохранить настройки.");
-                    setSvc((prev) => (prev ? ({
-                      ...prev,
-                      minimum_test_coverage_enabled: settingsEnabled,
-                      minimum_test_coverage: Number(settingsMinCoverage),
-                    }) : prev));
+
                     const fresh = await fetch(`/api/services/${id}`, {
                       headers: { Authorization: `Bearer ${token}` },
                       cache: "no-store",
                     });
+
                     if (fresh.ok) {
                       const freshData = await fresh.json();
                       setSvc(freshData);
-                      setSettingsEnabled(Boolean(freshData.minimum_test_coverage_enabled));
-                      setSettingsMinCoverage(Number(freshData.minimum_test_coverage || 0));
+                      setSettingsEnabled(Boolean(freshData?.settings?.minimum_test_coverage_enabled ?? freshData.minimum_test_coverage_enabled));
+                      setSettingsMinCoverage(Number(freshData?.settings?.minimum_test_coverage ?? freshData.minimum_test_coverage ?? 0));
                     }
+
                     setSettingsStatus("Настройки сохранены.");
                     setIsEditingSettings(false);
                   } catch {
                     setSettingsStatus("Не удалось сохранить настройки.");
                   }
                 }}>
-                  <label className="checkbox-row">
+                  <label className="settings-toggle-row">
                     <input
                       type="checkbox"
                       checked={settingsEnabled}
                       onChange={(e) => setSettingsEnabled(e.target.checked)}
                     />
-                    Задать минимальный порог покрытия
+                    <span>
+                      <strong>Минимальный порог покрытия</strong>
+                      <small>Блокирует релиз, если покрытие ниже заданного значения.</small>
+                    </span>
                   </label>
-                  <label>
-                    Минимальный порог покрытия (%)
+
+                  <label className="settings-field">
+                    <span>Минимальный порог покрытия (%)</span>
                     <input
                       type="number"
                       min="0"
@@ -1130,11 +1177,12 @@ export function ServicePage() {
                       onChange={(e) => setSettingsMinCoverage(Number(e.target.value || 0))}
                     />
                   </label>
-                  <div className="inline-actions">
-                    <button type="submit">Сохранить настройки</button>
+
+                  <div className="settings-actions">
+                    <button type="submit" className="settings-primary">Сохранить</button>
                     <button
                       type="button"
-                      className="ghost-btn"
+                      className="settings-secondary"
                       onClick={() => {
                         setSettingsStatus("");
                         setIsEditingSettings(false);
@@ -1145,7 +1193,8 @@ export function ServicePage() {
                   </div>
                 </form>
               )}
-              <p className="status">{settingsStatus}</p>
+
+              {settingsStatus && <p className="settings-status">{settingsStatus}</p>}
             </>
           )}
         </section>

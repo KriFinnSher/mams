@@ -34,15 +34,32 @@ export function LoginPage() {
   }
 
   return (
-    <main className="page">
-      <h1>Вход</h1>
-      <p className="subtitle">Войдите в MAMS.</p>
-      <form className="login-form" onSubmit={onSubmit}>
-        <label>Логин<input type="text" name="login" autoComplete="username" required /></label>
-        <label>Пароль<input type="password" name="password" autoComplete="current-password" required /></label>
-        <button type="submit">Войти</button>
-      </form>
-      <p className="status">{status}</p>
+    <main className="auth-page">
+      <section className="auth-card">
+        <div className="auth-brand">
+          <span className="brand-mark">M</span>
+          <span className="brand-text">MAMS</span>
+        </div>
+
+        <h1>Вход</h1>
+        <p></p>
+
+        <form className="auth-form" onSubmit={onSubmit}>
+          <label>
+            <span>Логин</span>
+            <input type="text" name="login" autoComplete="username" required />
+          </label>
+
+          <label>
+            <span>Пароль</span>
+            <input type="password" name="password" autoComplete="current-password" required />
+          </label>
+
+          <button type="submit">Войти</button>
+        </form>
+
+        {status && <p className="auth-status">{status}</p>}
+      </section>
     </main>
   );
 }

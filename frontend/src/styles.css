@@ -1240,3 +1240,395 @@ h1 {
 .service-link:hover {
   text-decoration: underline;
 }
+
+.service-edit-form {
+  margin-top: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.edit-section {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px;
+  background: #fbfcff;
+}
+
+.edit-section h3 {
+  margin: 0 0 12px;
+  font-size: 15px;
+  color: #17212b;
+}
+
+.edit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.edit-field {
+  display: grid;
+  gap: 6px;
+}
+
+.edit-field-full {
+  margin-bottom: 12px;
+}
+
+.edit-field span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.edit-field input,
+.edit-field select,
+.edit-field textarea {
+  width: 100%;
+  border: 1px solid #d6dce3;
+  border-radius: 11px;
+  padding: 10px 12px;
+  background: #fff;
+  font: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.edit-field input:focus,
+.edit-field select:focus,
+.edit-field textarea:focus {
+  outline: none;
+  border-color: #0f62fe;
+  box-shadow: 0 0 0 3px rgba(15, 98, 254, 0.12);
+}
+
+.edit-checkbox {
+  margin-top: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 12px;
+  background: #fff;
+}
+
+.edit-checkbox input {
+  margin-top: 3px;
+}
+
+.edit-checkbox span {
+  display: grid;
+  gap: 3px;
+}
+
+.edit-checkbox small {
+  color: #6b7280;
+}
+
+.edit-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.edit-primary,
+.edit-secondary {
+  height: 40px;
+  border-radius: 11px;
+  padding: 0 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.edit-primary {
+  border: 0;
+  background: #0f62fe;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(15, 98, 254, 0.2);
+}
+
+.edit-secondary {
+  border: 1px solid #d6dce3;
+  background: #fff;
+  color: #374151;
+}
+
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(15, 98, 254, 0.14), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(124, 58, 237, 0.12), transparent 36%),
+    #f4f6f8;
+}
+
+.auth-card {
+  width: min(100%, 440px);
+  border: 1px solid #e5e7eb;
+  border-radius: 22px;
+  padding: 26px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.05),
+    0 18px 44px rgba(15, 23, 42, 0.10);
+}
+
+.auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 22px;
+}
+
+.auth-card h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.auth-subtitle {
+  margin: 8px 0 22px;
+  color: #6b7280;
+  line-height: 1.45;
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.auth-form label span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.auth-form input {
+  height: 42px;
+  border: 1px solid #d6dce3;
+  border-radius: 12px;
+  padding: 0 12px;
+  background: #fff;
+  font: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.auth-form input:focus {
+  outline: none;
+  border-color: #0f62fe;
+  box-shadow: 0 0 0 3px rgba(15, 98, 254, 0.12);
+}
+
+.auth-form button {
+  height: 44px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 12px;
+  background: #0f62fe;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(15, 98, 254, 0.24);
+}
+
+.auth-form button:hover {
+  background: #0353e9;
+}
+
+.auth-status {
+  margin: 14px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.settings-card {
+  max-width: 760px;
+  margin: 18px auto 0;
+}
+
+.settings-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.settings-subtitle {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.settings-pill {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.settings-pill.enabled {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.settings-pill.disabled {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.settings-summary {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.settings-summary-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 14px;
+  background: #fafcff;
+}
+
+.settings-summary-card span {
+  display: block;
+  margin-bottom: 6px;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.settings-summary-card strong {
+  font-size: 18px;
+}
+
+.settings-edit-btn {
+  margin-top: 14px;
+  height: 40px;
+  border: 1px solid #0f62fe;
+  border-radius: 11px;
+  background: #fff;
+  color: #0f62fe;
+  padding: 0 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.settings-edit-btn:disabled {
+  border-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.settings-note {
+  margin-top: 10px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.settings-edit-form {
+  margin-top: 16px;
+  display: grid;
+  gap: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 16px;
+  background: #fbfcff;
+}
+
+.settings-toggle-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 12px;
+  background: #fff;
+}
+
+.settings-toggle-row input {
+  margin-top: 4px;
+}
+
+.settings-toggle-row span {
+  display: grid;
+  gap: 3px;
+}
+
+.settings-toggle-row small {
+  color: #6b7280;
+}
+
+.settings-field {
+  display: grid;
+  gap: 6px;
+}
+
+.settings-field span {
+  font-size: 12px;
+  font-weight: 700;
+  color: #6b7280;
+}
+
+.settings-field input {
+  height: 42px;
+  border: 1px solid #d6dce3;
+  border-radius: 12px;
+  padding: 0 12px;
+  background: #fff;
+  font: inherit;
+}
+
+.settings-field input:focus {
+  outline: none;
+  border-color: #0f62fe;
+  box-shadow: 0 0 0 3px rgba(15, 98, 254, 0.12);
+}
+
+.settings-field input:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.settings-primary,
+.settings-secondary {
+  height: 40px;
+  border-radius: 11px;
+  padding: 0 16px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.settings-primary {
+  border: 0;
+  background: #0f62fe;
+  color: #fff;
+  box-shadow: 0 6px 16px rgba(15, 98, 254, 0.2);
+}
+
+.settings-secondary {
+  border: 1px solid #d6dce3;
+  background: #fff;
+  color: #374151;
+}
+
+.settings-status {
+  margin: 12px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+}
