@@ -280,12 +280,14 @@ func (c *Client) createDeployment(ctx context.Context, namespace, name, containe
 		Containers: []corev1.Container{{
 			Name:  container,
 			Image: image,
-			Ports: []corev1.ContainerPort{{ContainerPort: 80}},
-			ReadinessProbe: &corev1.Probe{
-				ProbeHandler: corev1.ProbeHandler{
-					HTTPGet: &corev1.HTTPGetAction{Path: "/", Port: intstr.FromInt(80)},
-				},
-			},
+Ports: []corev1.ContainerPort{{ContainerPort: 8083}},
+						ReadinessProbe: &corev1.Probe{
+							ProbeHandler: corev1.ProbeHandler{
+								HTTPGet: &corev1.HTTPGetAction{Path: "/healthz", Port: intstr.FromInt(8083)},
+							},
+							InitialDelaySeconds: 5,
+							PeriodSeconds:       10,
+						},
 		}},
 	}
 
