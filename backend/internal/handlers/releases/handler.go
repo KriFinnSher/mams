@@ -262,7 +262,6 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 		"strategy":     req.Strategy,
 		"release_id":   created.ID.String(),
 		"ref_name":     ref,
-		"mams_callback_url": h.callbackURL + "/api/internal/releases/status",
 	}
 	if req.GitTag != "" {
 		inputs["ref_type"] = "tag"
