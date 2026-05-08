@@ -25,15 +25,19 @@ export function ServicePage() {
   const [releaseDescription, setReleaseDescription] = useState("");
   const [releaseMode, setReleaseMode] = useState("deploy");
   const [rollbackTag, setRollbackTag] = useState("");
+  const [rollbackCandidates, setRollbackCandidates] = useState([]);
   const [releaseStatus, setReleaseStatus] = useState("");
   const [releases, setReleases] = useState([]);
   const [releasesStatus, setReleasesStatus] = useState("");
+  const coverageEnabled = Boolean(svc?.settings?.minimum_test_coverage_enabled ?? svc?.minimum_test_coverage_enabled);
+  const coverageMin = Number(svc?.settings?.minimum_test_coverage ?? svc?.minimum_test_coverage ?? 0);
+  const coverageCurrent = Number(svc?.overview?.test_coverage ?? svc?.test_coverage ?? 0);
   const releaseBlocked = Boolean(
     releaseMode === "deploy" &&
-    svc?.minimum_test_coverage_enabled &&
-    Number(svc?.test_coverage) < Number(svc?.minimum_test_coverage),
+    coverageEnabled &&
+    coverageCurrent < coverageMin,
   );
-  const releaseBlockedHint = `Релиз заблокирован: текущее покрытие (${svc?.test_coverage}%) ниже минимального порога (${svc?.minimum_test_coverage}%).`;
+  const releaseBlockedHint = `Релиз заблокирован: текущее покрытие (${coverageCurrent}%) ниже минимального порога (${coverageMin}%).`;
   const isObserver = String(effectiveRole).toLowerCase() === "observer";
   const isOwner = String(effectiveRole).toLowerCase() === "service_owner";
   const isDeveloper = String(effectiveRole).toLowerCase() === "developer";
@@ -57,8 +61,8 @@ export function ServicePage() {
         const data = await response.json();
         if (cancelled) return;
         setSvc(data);
-        setSettingsEnabled(Boolean(data.minimum_test_coverage_enabled));
-        setSettingsMinCoverage(Number(data.minimum_test_coverage || 0));
+        setSettingsEnabled(Boolean(data?.settings?.minimum_test_coverage_enabled ?? data.minimum_test_coverage_enabled));
+        setSettingsMinCoverage(Number(data?.settings?.minimum_test_coverage ?? data.minimum_test_coverage ?? 0));
         setStatus("");
 
         const meResp = await fetch("/api/auth/me", {
@@ -77,6 +81,29 @@ export function ServicePage() {
     load();
     return () => { cancelled = true; };
   }, [id, reloadTick]);
+
+  useEffect(() => {
+    if (releaseMode !== "rollback") return;
+    let cancelled = false;
+    async function loadRollbackCandidates() {
+      const token = localStorage.getItem("mams_token");
+      if (!token) return;
+      try {
+        const resp = await fetch(`/api/services/${id}/rollback/candidates`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (cancelled) return;
+        setRollbackCandidates(Array.isArray(data?.git_tags) ? data.git_tags : []);
+      } catch {
+        if (!cancelled) setRollbackCandidates([]);
+      }
+    }
+    loadRollbackCandidates();
+    return () => { cancelled = true; };
+  }, [id, releaseMode]);
 
   useEffect(() => {
     function onVisible() {
@@ -189,17 +216,17 @@ export function ServicePage() {
                 <>
                 <dl className="info-grid">
                   <dt>Название</dt><dd>{svc.name || "-"}</dd>
-                  <dt>Тип</dt><dd>{svc.type || "-"}</dd>
-                  <dt>Версия</dt><dd>{svc.version || "-"}</dd>
-                  <dt>Описание</dt><dd>{svc.description || "-"}</dd>
-                  <dt>Покрытие тестами</dt><dd>{svc.test_coverage ?? "-"}%</dd>
-                  <dt>Минимальное покрытие</dt><dd>{svc.minimum_test_coverage_enabled ? `${svc.minimum_test_coverage}%` : "выключено"}</dd>
-                  <dt>Чувствительные данные (PII)</dt><dd>{svc.pii_sensitive ? "да" : "нет"}</dd>
-                  <dt>Команда</dt><dd>{svc.responsible_team_ref || "-"}</dd>
-                  <dt>Важность</dt><dd>{svc.importance || "-"}</dd>
-                  <dt>Репозиторий</dt><dd>{svc.repository_url || "-"}</dd>
-                  <dt>Ветка по умолчанию</dt><dd>{svc.default_branch || "-"}</dd>
-                  <dt>Grafana UID</dt><dd>{svc.grafana_dashboard_uid || "-"}</dd>
+                  <dt>Тип</dt><dd>{svc?.overview?.type || "-"}</dd>
+                  <dt>Версия</dt><dd>{svc?.overview?.version || "-"}</dd>
+                  <dt>Описание</dt><dd>{svc?.overview?.description || "-"}</dd>
+                  <dt>Покрытие тестами</dt><dd>{svc?.overview?.test_coverage ?? "-"}%</dd>
+                  <dt>Минимальное покрытие</dt><dd>{coverageEnabled ? `${coverageMin}%` : "выключено"}</dd>
+                  <dt>Чувствительные данные (PII)</dt><dd>{svc?.overview?.pii_sensitive ? "да" : "нет"}</dd>
+                  <dt>Команда</dt><dd>{svc?.overview?.responsible_team_ref || "-"}</dd>
+                  <dt>Важность</dt><dd>{svc?.overview?.importance || "-"}</dd>
+                  <dt>Репозиторий</dt><dd>{svc?.modules?.repository_url || "-"}</dd>
+                  <dt>Ветка по умолчанию</dt><dd>{svc?.modules?.default_branch || "-"}</dd>
+                  <dt>Grafana UID</dt><dd>{svc?.modules?.grafana_dashboard_uid || "-"}</dd>
                 </dl>
                 {!isEditingInfo && (
                   <button type="button" className="edit-btn" onClick={() => {
@@ -343,9 +370,9 @@ export function ServicePage() {
                     Версия для rollback
                     <select value={rollbackTag} onChange={(e) => setRollbackTag(e.target.value)}>
                       <option value="">Выберите git tag</option>
-                      <option value="v1.2.4">v1.2.4</option>
-                      <option value="v1.2.3">v1.2.3</option>
-                      <option value="v1.2.2">v1.2.2</option>
+                      {rollbackCandidates.map((tag) => (
+                        <option key={tag} value={tag}>{tag}</option>
+                      ))}
                     </select>
                   </label>
                 )}
