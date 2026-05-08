@@ -53,6 +53,10 @@ services:
       JWT_TTL: "3600"
       GITHUB_TOKEN: ${GITHUB_TOKEN}
       KUBE_CONFIG_PATH: /root/.kube/config
+      DOCKER_REGISTRY: ${DOCKER_REGISTRY:-docker.io}
+      DOCKER_USERNAME: ${DOCKER_USERNAME}
+      DOCKER_PASSWORD: ${DOCKER_PASSWORD}
+      DOCKER_HUB_OWNER: ${DOCKER_HUB_OWNER}
     ports:
       - "8081:8081"
     extra_hosts:
