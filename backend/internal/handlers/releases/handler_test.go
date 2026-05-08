@@ -35,7 +35,7 @@ func TestGet_Success(t *testing.T) {
 	sid := uuid.New()
 	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{ID: sid, OrganizationID: org}, nil)
 	rr.EXPECT().ListByService(gomock.Any(), sid).Return([]models.Release{{ID: uuid.New(), ServiceID: sid}}, nil)
-	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{}, nil)
 	req := httptest.NewRequest(http.MethodGet, "/api/services/"+sid.String()+"/releases", nil)
 	req.SetPathValue("id", sid.String())
 	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: org}))
@@ -58,7 +58,7 @@ func TestCreatePending_Status(t *testing.T) {
 		}
 		return rel, nil
 	})
-	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{}, nil)
 	if _, err := h.CreatePending(context.Background(), sid, uid, "v1", "main", "prod", "rolling", "desc"); err != nil {
 		t.Fatalf("err=%v", err)
 	}
@@ -73,7 +73,7 @@ func TestMarkResult_Success(t *testing.T) {
 	sid := uuid.New()
 	rr.EXPECT().UpdateStatus(gomock.Any(), rid, "success").Return(models.Release{ID: rid, ServiceID: sid, GitTag: "v1.2.3", Status: "success"}, nil)
 	rr.EXPECT().UpdateServiceVersion(gomock.Any(), sid, "v1.2.3").Return(nil)
-	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{}, nil)
 	got, err := h.MarkResult(context.Background(), rid, "success")
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -90,7 +90,7 @@ func TestMarkResult_FailedDoesNotUpdateServiceVersion(t *testing.T) {
 	rid := uuid.New()
 	rr.EXPECT().GetByID(gomock.Any(), rid).Return(models.Release{ID: rid, Status: "in_progress"}, nil)
 	rr.EXPECT().UpdateStatus(gomock.Any(), rid, "failed").Return(models.Release{ID: rid, Status: "failed"}, nil)
-	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{}, nil)
 	got, err := h.MarkResult(context.Background(), rid, "failed")
 	if err != nil {
 		t.Fatalf("err=%v", err)
@@ -106,7 +106,7 @@ func TestMarkResult_InvalidTransition(t *testing.T) {
 	rr := mocks.NewMockReleaseReader(ctrl)
 	rid := uuid.New()
 	rr.EXPECT().GetByID(gomock.Any(), rid).Return(models.Release{ID: rid, Status: "pending"}, nil)
-	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{}, nil)
 	if _, err := h.MarkResult(context.Background(), rid, "success"); err == nil {
 		t.Fatalf("expected error")
 	}
@@ -116,7 +116,7 @@ func TestMarkResult_InvalidTargetStatus(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	sr := mocks.NewMockServiceReader(ctrl)
 	rr := mocks.NewMockReleaseReader(ctrl)
-	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{}, nil)
 	if _, err := h.MarkResult(context.Background(), uuid.New(), "pending"); err == nil {
 		t.Fatalf("expected error")
 	}
@@ -128,7 +128,7 @@ func TestGet_NotFound(t *testing.T) {
 	rr := mocks.NewMockReleaseReader(ctrl)
 	sid := uuid.New()
 	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{}, postgresrepo.ErrServiceNotFound)
-	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{}, nil)
 	req := httptest.NewRequest(http.MethodGet, "/api/services/"+sid.String()+"/releases", nil)
 	req.SetPathValue("id", sid.String())
 	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: uuid.New()}))
@@ -152,7 +152,7 @@ func TestRollbackCandidates_Success(t *testing.T) {
 		{ServiceID: sid, Status: "success", GitTag: "v1.0.1"},
 		{ServiceID: sid, Status: "success", GitTag: "v1.0.3"},
 	}, nil)
-	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{}, nil)
 	req := httptest.NewRequest(http.MethodGet, "/api/services/"+sid.String()+"/rollback/candidates", nil)
 	req.SetPathValue("id", sid.String())
 	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: org}))
@@ -176,7 +176,7 @@ func TestRollbackCandidates_NotFound(t *testing.T) {
 	rr := mocks.NewMockReleaseReader(ctrl)
 	sid := uuid.New()
 	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{}, postgresrepo.ErrServiceNotFound)
-	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{}, nil)
 	req := httptest.NewRequest(http.MethodGet, "/api/services/"+sid.String()+"/rollback/candidates", nil)
 	req.SetPathValue("id", sid.String())
 	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: uuid.New()}))
@@ -195,7 +195,7 @@ func TestRollbackCandidates_ListError(t *testing.T) {
 	sid := uuid.New()
 	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{ID: sid, OrganizationID: org}, nil)
 	rr.EXPECT().ListByService(gomock.Any(), sid).Return(nil, errors.New("db error"))
-	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{}, nil)
 	req := httptest.NewRequest(http.MethodGet, "/api/services/"+sid.String()+"/rollback/candidates", nil)
 	req.SetPathValue("id", sid.String())
 	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: org}))
@@ -228,7 +228,7 @@ func TestDeploy_Success(t *testing.T) {
 	rr.EXPECT().UpdateStatus(gomock.Any(), gomock.Any(), "in_progress").DoAndReturn(func(_ context.Context, id uuid.UUID, status string) (models.Release, error) {
 		return models.Release{ID: id, ServiceID: sid, Status: status}, nil
 	})
-	h := NewHandler(sr, rr, wd)
+	h := NewHandler(sr, rr, wd, nil)
 	body, _ := json.Marshal(map[string]any{"environment": "dev", "strategy": "rolling", "branch": "main"})
 	req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/deploy", bytes.NewReader(body))
 	req.SetPathValue("id", sid.String())
@@ -253,7 +253,7 @@ func TestDeploy_InvalidBody(t *testing.T) {
 	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{
 		ID: sid, OrganizationID: org, RepositoryURL: "https://github.com/acme/repo", DefaultBranch: "main",
 	}, nil)
-	h := NewHandler(sr, rr, wd)
+	h := NewHandler(sr, rr, wd, nil)
 	req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/deploy", bytes.NewReader([]byte("{")))
 	req.SetPathValue("id", sid.String())
 	req = req.WithContext(authmw.WithClaims(context.Background(), authmw.Claims{OrganizationID: org, UserID: uuid.New()}))
@@ -274,7 +274,7 @@ func TestDeploy_BranchRequiredForDevStaging(t *testing.T) {
 	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{
 		ID: sid, OrganizationID: org, RepositoryURL: "https://github.com/acme/repo", DefaultBranch: "main",
 	}, nil).Times(2)
-	h := NewHandler(sr, rr, wd)
+	h := NewHandler(sr, rr, wd, nil)
 
 	cases := []string{"dev", "staging"}
 	for _, env := range cases {
@@ -310,7 +310,7 @@ func TestDeploy_UsesDefaultBranchFallbackForNonDevStaging(t *testing.T) {
 	rr.EXPECT().UpdateStatus(gomock.Any(), gomock.Any(), "in_progress").DoAndReturn(func(_ context.Context, id uuid.UUID, status string) (models.Release, error) {
 		return models.Release{ID: id, ServiceID: sid, Status: status}, nil
 	})
-	h := NewHandler(sr, rr, wd)
+	h := NewHandler(sr, rr, wd, nil)
 	body, _ := json.Marshal(map[string]any{"environment": "qa", "strategy": "rolling", "branch": "", "git_tag": ""})
 	req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/deploy", bytes.NewReader(body))
 	req.SetPathValue("id", sid.String())
@@ -335,7 +335,7 @@ func TestDeploy_GitTagRequiredForProd(t *testing.T) {
 	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{
 		ID: sid, OrganizationID: org, RepositoryURL: "https://github.com/acme/repo", DefaultBranch: "main",
 	}, nil)
-	h := NewHandler(sr, rr, wd)
+	h := NewHandler(sr, rr, wd, nil)
 	body, _ := json.Marshal(map[string]any{"environment": "prod", "strategy": "rolling", "branch": "main", "git_tag": ""})
 	req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/deploy", bytes.NewReader(body))
 	req.SetPathValue("id", sid.String())
@@ -358,7 +358,7 @@ func TestDeploy_BlocksWhenCoverageRequirementIsNotMet(t *testing.T) {
 		ID: sid, OrganizationID: org, RepositoryURL: "https://github.com/acme/repo", DefaultBranch: "main",
 		TestCoverage: 65, MinimumTestCoverageEnabled: true, MinimumTestCoverage: 70,
 	}, nil)
-	h := NewHandler(sr, rr, wd)
+	h := NewHandler(sr, rr, wd, nil)
 	body, _ := json.Marshal(map[string]any{"environment": "dev", "strategy": "rolling", "branch": "main"})
 	req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/deploy", bytes.NewReader(body))
 	req.SetPathValue("id", sid.String())
@@ -395,7 +395,7 @@ func TestRollback_Success(t *testing.T) {
 	rr.EXPECT().UpdateStatus(gomock.Any(), gomock.Any(), "in_progress").DoAndReturn(func(_ context.Context, id uuid.UUID, status string) (models.Release, error) {
 		return models.Release{ID: id, ServiceID: sid, Status: status}, nil
 	})
-	h := NewHandler(sr, rr, wd)
+	h := NewHandler(sr, rr, wd, nil)
 	body, _ := json.Marshal(map[string]any{"git_tag": "v1.2.1", "environment": "prod", "description": "rollback"})
 	req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/rollback", bytes.NewReader(body))
 	req.SetPathValue("id", sid.String())
@@ -420,7 +420,7 @@ func TestRollback_RequiresGitTag(t *testing.T) {
 	sr.EXPECT().GetByID(gomock.Any(), sid).Return(models.Service{
 		ID: sid, OrganizationID: org, RepositoryURL: "https://github.com/acme/repo",
 	}, nil)
-	h := NewHandler(sr, rr, wd)
+	h := NewHandler(sr, rr, wd, nil)
 	body, _ := json.Marshal(map[string]any{"git_tag": ""})
 	req := httptest.NewRequest(http.MethodPost, "/api/services/"+sid.String()+"/rollback", bytes.NewReader(body))
 	req.SetPathValue("id", sid.String())
@@ -443,7 +443,7 @@ func TestUpdateFromCI_Success(t *testing.T) {
 		ID: rid, ServiceID: sid, GitTag: "v1.0.0", Status: "success",
 	}, nil)
 	rr.EXPECT().UpdateServiceVersion(gomock.Any(), sid, "v1.0.0").Return(nil)
-	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{}, nil)
 	body, _ := json.Marshal(map[string]any{"release_id": rid.String(), "status": "success"})
 	req := httptest.NewRequest(http.MethodPost, "/api/internal/releases/status", bytes.NewReader(body))
 	rec := httptest.NewRecorder()
@@ -459,7 +459,7 @@ func TestUpdateFromCI_NotFound(t *testing.T) {
 	rr := mocks.NewMockReleaseReader(ctrl)
 	rid := uuid.New()
 	rr.EXPECT().GetByID(gomock.Any(), rid).Return(models.Release{}, postgresrepo.ErrReleaseNotFound)
-	h := NewHandler(sr, rr, &testWorkflowDispatcher{})
+	h := NewHandler(sr, rr, &testWorkflowDispatcher{}, nil)
 	body, _ := json.Marshal(map[string]any{"release_id": rid.String(), "status": "failed"})
 	req := httptest.NewRequest(http.MethodPost, "/api/internal/releases/status", bytes.NewReader(body))
 	rec := httptest.NewRecorder()

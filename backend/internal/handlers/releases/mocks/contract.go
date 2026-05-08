@@ -192,3 +192,83 @@ func (mr *MockWorkflowDispatcherMockRecorder) DispatchWorkflow(ctx, repositoryUR
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DispatchWorkflow", reflect.TypeOf((*MockWorkflowDispatcher)(nil).DispatchWorkflow), ctx, repositoryURL, workflowID, ref, inputs)
 }
+
+// MockKubeDeployer is a mock of KubeDeployer interface.
+type MockKubeDeployer struct {
+	ctrl     *gomock.Controller
+	recorder *MockKubeDeployerMockRecorder
+	isgomock struct{}
+}
+
+// MockKubeDeployerMockRecorder is the mock recorder for MockKubeDeployer.
+type MockKubeDeployerMockRecorder struct {
+	mock *MockKubeDeployer
+}
+
+// NewMockKubeDeployer creates a new mock instance.
+func NewMockKubeDeployer(ctrl *gomock.Controller) *MockKubeDeployer {
+	mock := &MockKubeDeployer{ctrl: ctrl}
+	mock.recorder = &MockKubeDeployerMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockKubeDeployer) EXPECT() *MockKubeDeployerMockRecorder {
+	return m.recorder
+}
+
+// ApplyCanaryPatch mocks base method.
+func (m *MockKubeDeployer) ApplyCanaryPatch(ctx context.Context, namespace, name, canaryName, container, image string, replicas int32) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ApplyCanaryPatch", ctx, namespace, name, canaryName, container, image, replicas)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ApplyCanaryPatch indicates an expected call of ApplyCanaryPatch.
+func (mr *MockKubeDeployerMockRecorder) ApplyCanaryPatch(ctx, namespace, name, canaryName, container, image, replicas any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ApplyCanaryPatch", reflect.TypeOf((*MockKubeDeployer)(nil).ApplyCanaryPatch), ctx, namespace, name, canaryName, container, image, replicas)
+}
+
+// RollbackToTag mocks base method.
+func (m *MockKubeDeployer) RollbackToTag(ctx context.Context, namespace, name, container, image string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RollbackToTag", ctx, namespace, name, container, image)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RollbackToTag indicates an expected call of RollbackToTag.
+func (mr *MockKubeDeployerMockRecorder) RollbackToTag(ctx, namespace, name, container, image any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RollbackToTag", reflect.TypeOf((*MockKubeDeployer)(nil).RollbackToTag), ctx, namespace, name, container, image)
+}
+
+// UpgradeRecreate mocks base method.
+func (m *MockKubeDeployer) UpgradeRecreate(ctx context.Context, namespace, name, container, image string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpgradeRecreate", ctx, namespace, name, container, image)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpgradeRecreate indicates an expected call of UpgradeRecreate.
+func (mr *MockKubeDeployerMockRecorder) UpgradeRecreate(ctx, namespace, name, container, image any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeRecreate", reflect.TypeOf((*MockKubeDeployer)(nil).UpgradeRecreate), ctx, namespace, name, container, image)
+}
+
+// UpgradeRolling mocks base method.
+func (m *MockKubeDeployer) UpgradeRolling(ctx context.Context, namespace, name, container, image string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpgradeRolling", ctx, namespace, name, container, image)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpgradeRolling indicates an expected call of UpgradeRolling.
+func (mr *MockKubeDeployerMockRecorder) UpgradeRolling(ctx, namespace, name, container, image any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpgradeRolling", reflect.TypeOf((*MockKubeDeployer)(nil).UpgradeRolling), ctx, namespace, name, container, image)
+}

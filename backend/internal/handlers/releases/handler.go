@@ -18,10 +18,11 @@ type Handler struct {
 	services ServiceReader
 	releases ReleaseReader
 	workflows WorkflowDispatcher
+	kube     KubeDeployer
 }
 
-func NewHandler(services ServiceReader, releases ReleaseReader, workflows WorkflowDispatcher) *Handler {
-	return &Handler{services: services, releases: releases, workflows: workflows}
+func NewHandler(services ServiceReader, releases ReleaseReader, workflows WorkflowDispatcher, kube KubeDeployer) *Handler {
+	return &Handler{services: services, releases: releases, workflows: workflows, kube: kube}
 }
 
 func (h *Handler) CreatePending(
@@ -233,6 +234,10 @@ func (h *Handler) Deploy(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, "minimum test coverage requirement is not met")
 		return
 	}
+	if err := h.applyKubeDeploy(r.Context(), svc, req.Environment, req.Strategy, req.Branch, req.GitTag); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to apply kubernetes rollout")
+		return
+	}
 
 	created, err := h.CreatePending(r.Context(), svc.ID, claims.UserID, req.GitTag, req.Branch, req.Environment, req.Strategy, req.Description)
 	if err != nil {
@@ -315,6 +320,10 @@ func (h *Handler) Rollback(w http.ResponseWriter, r *http.Request) {
 	if req.Environment == "" {
 		req.Environment = "prod"
 	}
+	if err := h.applyKubeRollback(r.Context(), svc, req.Environment, req.GitTag); err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, "failed to apply kubernetes rollback")
+		return
+	}
 
 	created, err := h.CreatePending(r.Context(), svc.ID, claims.UserID, req.GitTag, "", req.Environment, "rollback", req.Description)
 	if err != nil {
@@ -345,6 +354,43 @@ func (h *Handler) Rollback(w http.ResponseWriter, r *http.Request) {
 		"release_id": inProgress.ID.String(),
 		"status":     inProgress.Status,
 	})
+}
+
+func (h *Handler) applyKubeDeploy(ctx context.Context, svc models.Service, env, strategy, branch, gitTag string) error {
+	if h.kube == nil {
+		return nil
+	}
+	namespace := env
+	deployment := svc.Name
+	container := "app"
+	imageRef := branch
+	if imageRef == "" {
+		imageRef = gitTag
+	}
+	if imageRef == "" {
+		imageRef = "latest"
+	}
+	image := svc.RepositoryURL + ":" + imageRef
+
+	switch strategy {
+	case "recreate":
+		return h.kube.UpgradeRecreate(ctx, namespace, deployment, container, image)
+	case "canary":
+		return h.kube.ApplyCanaryPatch(ctx, namespace, deployment, deployment+"-canary", container, image, 1)
+	default:
+		return h.kube.UpgradeRolling(ctx, namespace, deployment, container, image)
+	}
+}
+
+func (h *Handler) applyKubeRollback(ctx context.Context, svc models.Service, env, gitTag string) error {
+	if h.kube == nil {
+		return nil
+	}
+	namespace := env
+	deployment := svc.Name
+	container := "app"
+	image := svc.RepositoryURL + ":" + gitTag
+	return h.kube.RollbackToTag(ctx, namespace, deployment, container, image)
 }
 
 func (h *Handler) UpdateFromCI(w http.ResponseWriter, r *http.Request) {

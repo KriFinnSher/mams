@@ -24,3 +24,10 @@ type ReleaseReader interface {
 type WorkflowDispatcher interface {
 	DispatchWorkflow(ctx context.Context, repositoryURL, workflowID, ref string, inputs map[string]string) error
 }
+
+type KubeDeployer interface {
+	UpgradeRolling(ctx context.Context, namespace, name, container, image string) error
+	UpgradeRecreate(ctx context.Context, namespace, name, container, image string) error
+	ApplyCanaryPatch(ctx context.Context, namespace, name, canaryName, container, image string, replicas int32) error
+	RollbackToTag(ctx context.Context, namespace, name, container, image string) error
+}

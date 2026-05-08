@@ -16,6 +16,7 @@ import (
 	"github.com/mams/backend/internal/bootstrap"
 	"github.com/mams/backend/internal/config"
 	"github.com/mams/backend/internal/githubclient"
+	"github.com/mams/backend/internal/kubeclient"
 	authhandler "github.com/mams/backend/internal/handlers/auth"
 	contractshandler "github.com/mams/backend/internal/handlers/contracts"
 	logshandler "github.com/mams/backend/internal/handlers/logs"
@@ -29,6 +30,7 @@ import (
 	mongorepo "github.com/mams/backend/internal/repository/mongo"
 	postgresrepo "github.com/mams/backend/internal/repository/postgres"
 	"github.com/mams/backend/internal/ws"
+	"k8s.io/client-go/kubernetes/fake"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -83,7 +85,8 @@ func main() {
 	logsH := logshandler.NewHandler(logsRepo, hub, logger)
 	metricsH := metricshandler.NewHandler(services, cfg.GrafanaURL)
 	contractsH := contractshandler.NewHandler(services, ghClient)
-	releasesH := releaseshandler.NewHandler(services, releasesRepo, ghClient)
+	kube := kubeclient.New(fake.NewSimpleClientset())
+	releasesH := releaseshandler.NewHandler(services, releasesRepo, ghClient, kube)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/auth/login", func(w http.ResponseWriter, r *http.Request) {
