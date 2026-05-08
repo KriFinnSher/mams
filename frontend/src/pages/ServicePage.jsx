@@ -1,6 +1,40 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { NavBar } from "../components/NavBar";
+import { Link, useNavigate } from "react-router-dom";
+
+export function NavBar() {
+  const navigate = useNavigate();
+
+  function logout() {
+    localStorage.removeItem("mams_token");
+    navigate("/login", { replace: true });
+  }
+
+  return (
+    <header className="topbar">
+      <div className="topbar-brand">
+        <span className="brand-mark">M</span>
+        <span className="brand-text">MAMS</span>
+      </div>
+
+      <nav className="topbar-nav">
+        <Link to="/services" className="topbar-link">Сервисы</Link>
+        <Link to="/services/new" className="topbar-link">Новый сервис</Link>
+      </nav>
+
+      <div className="topbar-spacer" />
+
+      <Link to="/profile" className="profile-link">
+        <span className="profile-icon">👤</span>
+        <span>Профиль</span>
+      </Link>
+
+      <button type="button" className="logout-btn" onClick={logout}>
+        Выйти
+      </button>
+    </header>
+  );
+}
 
 function normalizeContractMethod(method) {
   const params = Array.isArray(method?.parameters)
@@ -477,7 +511,6 @@ export function ServicePage() {
 
   return (
     <main className="page">
-      <h1>{svc?.overview?.name || svc?.name || "Сервис"}</h1>
       <NavBar />
       <div className="tabs">
         <button type="button" className={tab === "overview" ? "tab tab-active" : "tab"} onClick={() => setTab("overview")}>
@@ -547,7 +580,18 @@ export function ServicePage() {
                   <div className="service-links">
                     <div>
                       <span className="meta-label">Репозиторий</span>
-                      <strong>{svc?.modules?.repository_url || "-"}</strong>
+                      {svc?.modules?.repository_url ? (
+                        <a
+                          href={svc.modules.repository_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="service-link"
+                        >
+                          {svc.modules.repository_url}
+                        </a>
+                      ) : (
+                        <strong>-</strong>
+                      )}
                     </div>
 
                     <div>
@@ -746,8 +790,12 @@ export function ServicePage() {
                       <strong>{releaseStrategy}</strong>
                     </div>
                     <div className="release-stat">
-                      <span>Покрытие</span>
-                      <strong>{coverageCurrent}%</strong>
+                      <span>Ветка</span>
+                      <strong>
+                        {releaseEnv === "prod"
+                          ? releaseTag || "tag required"
+                          : releaseBranch || "main"}
+                      </strong>
                     </div>
                   </div>
 
