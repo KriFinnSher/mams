@@ -2,6 +2,23 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { NavBar } from "../components/NavBar";
 
+function renderContractTree(rows, depth = 0) {
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  return rows.map((row, idx) => {
+    const key = `${row?.name || "field"}-${idx}-${depth}`;
+    const hasChildren = Array.isArray(row?.children) && row.children.length > 0;
+    return (
+      <div key={key}>
+        <div className="contract-tree-row" style={{ paddingLeft: `${12 + depth * 20}px` }}>
+          <span className="contract-tree-name">{row?.name || "-"}</span>
+          <span className="contract-tree-type">{row?.type || "-"}</span>
+        </div>
+        {hasChildren && renderContractTree(row.children, depth + 1)}
+      </div>
+    );
+  });
+}
+
 export function ServicePage() {
   const { id } = useParams();
   const [tab, setTab] = useState("overview");
@@ -20,6 +37,7 @@ export function ServicePage() {
   const [logsCursor, setLogsCursor] = useState("");
   const [contracts, setContracts] = useState([]);
   const [contractsStatus, setContractsStatus] = useState("");
+  const [openContractPanels, setOpenContractPanels] = useState({});
   const [metricsEmbedURL, setMetricsEmbedURL] = useState("");
   const [metricsStatus, setMetricsStatus] = useState("");
   const [releaseStrategy, setReleaseStrategy] = useState("rolling");
@@ -177,6 +195,7 @@ export function ServicePage() {
         if (cancelled) return;
         const list = Array.isArray(data?.methods) ? data.methods : [];
         setContracts(list);
+        setOpenContractPanels({});
         setContractsStatus(list.length === 0 ? "Контракты не найдены." : "");
       } catch {
         if (!cancelled) setContractsStatus("Не удалось загрузить контракты.");
@@ -527,19 +546,52 @@ export function ServicePage() {
                 {moduleTab === "contracts" && (
                   <article className="module-card">
                     {contractsStatus && <p className="status">{contractsStatus}</p>}
-                    {contracts.map((m, idx) => (
-                      <div key={`${m.name || "m"}-${idx}`} className="contract-item">
-                        <div className="contract-toggle">
+                    <div className="contracts-pane">
+                    {contracts.map((m, idx) => {
+                      const inKey = `${m.name || idx}:in`;
+                      const outKey = `${m.name || idx}:out`;
+                      const inOpen = Boolean(openContractPanels[inKey]);
+                      const outOpen = Boolean(openContractPanels[outKey]);
+                      return (
+                      <div key={`${m.name || "m"}-${idx}`} className="contract-method">
+                        <div className="contract-method-head">
                           <strong>{m.name}</strong>
-                          <span>{m.input} → {m.output}</span>
+                          <div className="contract-head-actions">
+                            <button
+                              type="button"
+                              className={inOpen ? "contract-io-btn active" : "contract-io-btn"}
+                              onClick={() => setOpenContractPanels((prev) => ({ ...prev, [inKey]: !prev[inKey] }))}
+                            >
+                              IN
+                            </button>
+                            <button
+                              type="button"
+                              className={outOpen ? "contract-io-btn active" : "contract-io-btn"}
+                              onClick={() => setOpenContractPanels((prev) => ({ ...prev, [outKey]: !prev[outKey] }))}
+                            >
+                              OUT
+                            </button>
+                          </div>
                         </div>
-                        {Array.isArray(m.parameters) && m.parameters.length > 0 && (
-                          <ul className="contract-params">
-                            {m.parameters.map((p, pIdx) => <li key={`${p.name || "p"}-${pIdx}`}>{p.name}: {p.type}</li>)}
-                          </ul>
+                        {inOpen && (
+                          <div className="contract-expand">
+                            <div className="contract-expand-title">Вход: {m.input || "-"}</div>
+                            {Array.isArray(m.parameters) && m.parameters.length > 0 ? renderContractTree(m.parameters) : <div className="contract-empty">Параметры не указаны</div>}
+                          </div>
+                        )}
+                        {outOpen && (
+                          <div className="contract-expand">
+                            <div className="contract-expand-title">Выход: {m.output || "-"}</div>
+                            {Array.isArray(m.output_parameters) && m.output_parameters.length > 0 ? renderContractTree(m.output_parameters) : <div className="contract-empty">Поля ответа не указаны</div>}
+                          </div>
                         )}
                       </div>
-                    ))}
+                      );
+                    })}
+                    </div>
+                    {contracts.length === 0 && !contractsStatus && (
+                      <div className="contract-empty">Контракты не найдены.</div>
+                    )}
                   </article>
                 )}
                 {moduleTab === "metrics" && !isObserver && (
