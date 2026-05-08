@@ -405,7 +405,7 @@ func (h *Handler) applyKubeDeploy(ctx context.Context, svc models.Service, env, 
 
 	registry := svc.ContainerRegistry
 	if registry == "" {
-		registry = "ghcr.io"
+		registry = "docker.io"
 	}
 	repo := extractRepoPath(svc.RepositoryURL)
 	image := registry + "/" + repo + ":" + imageRef
@@ -438,7 +438,7 @@ func (h *Handler) applyKubeRollback(ctx context.Context, svc models.Service, env
 
 	registry := svc.ContainerRegistry
 	if registry == "" {
-		registry = "ghcr.io"
+		registry = "docker.io"
 	}
 	repo := extractRepoPath(svc.RepositoryURL)
 	image := registry + "/" + repo + ":" + gitTag
